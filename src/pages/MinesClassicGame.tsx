@@ -288,15 +288,16 @@ const MinesClassicGame = () => {
       toast.error(`Maximum bet is ${currency === "dollar" ? "$1,000" : "10,000 Stars"}`);
       return;
     }
-    if (parsedBet > balance) {
-      toast.error("Insufficient Balance!");
+    const nativeBet = toNativeAmount(parsedBet, currencyMode);
+    if (nativeBet > balance) {
+      toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
       return;
     }
 
     // Deduct Stake
     try {
       await reportGameResult({
-        betAmount: parsedBet,
+        betAmount: nativeBet,
         winAmount: 0,
         currency,
         game: "mines_classic"
