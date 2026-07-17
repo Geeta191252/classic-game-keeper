@@ -385,32 +385,9 @@ const ChickenRoadGame = () => {
           <BookOpen className="h-4 w-4" />
         </button>
 
-        {/* Balance pills: $ and ⭐ */}
-        <div className="flex items-center gap-1 ml-auto min-w-0">
-          <button
-            onClick={() => setActiveWallet("dollar")}
-            className="flex items-center gap-1 px-2 h-9 rounded-xl font-bold text-[11px] whitespace-nowrap max-w-[90px] truncate"
-            style={{
-              background: "#0e1116",
-              border: `1.5px solid ${activeWallet === "dollar" ? "hsl(140 80% 50%)" : "#232735"}`,
-              boxShadow: activeWallet === "dollar" ? "0 0 10px hsla(140,80%,50%,0.35)" : "none",
-              color: activeWallet === "dollar" ? "#eaf6ea" : "#9aa0ab",
-            }}
-          >
-            💲 {gameDollarBalance < 10000 ? gameDollarBalance.toFixed(2) : `${(gameDollarBalance / 1000).toFixed(1)}k`}
-          </button>
-          <button
-            onClick={() => setActiveWallet("star")}
-            className="flex items-center gap-1 px-2 h-9 rounded-xl font-bold text-[11px] whitespace-nowrap max-w-[80px] truncate"
-            style={{
-              background: "#0e1116",
-              border: `1.5px solid ${activeWallet === "star" ? "hsl(45 90% 55%)" : "#232735"}`,
-              boxShadow: activeWallet === "star" ? "0 0 10px hsla(45,90%,55%,0.35)" : "none",
-              color: activeWallet === "star" ? "#fff4d6" : "#9aa0ab",
-            }}
-          >
-            ⭐ {gameStarBalance.toLocaleString()}
-          </button>
+        {/* Currency chips: $ / ₹ / ★ */}
+        <div className="ml-auto">
+          <GameCurrencyChips mode={currencyMode} onChange={setCurrencyMode} disabled={phase === "playing"} />
         </div>
 
         {/* Menu */}
