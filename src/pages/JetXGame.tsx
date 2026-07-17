@@ -152,7 +152,7 @@ const JetXGame = () => {
         </div>
         <div className="text-right">
           <div className="text-[10px] text-white/50">Balance</div>
-          <div className="text-sm font-bold">{fmt(totalBal, currency)}</div>
+          <div className="text-sm font-bold">{fmtMode(displayBalance)}</div>
         </div>
       </div>
 
