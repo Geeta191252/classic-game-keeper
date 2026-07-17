@@ -2277,7 +2277,7 @@ app.post("/api/aviator/bet", async (req, res) => {
     };
     s.totalPool += numAmt;
 
-    res.json({ success: true, roundNumber: s.roundNumber, slot: slotNum });
+    res.json({ success: true, roundNumber: s.roundNumber, slot: slotNum, ...balancePayload(user) });
   } catch (err) {
     console.error("Aviator bet error:", err);
     res.status(500).json({ error: "Failed to place bet" });
@@ -2304,7 +2304,7 @@ app.post("/api/aviator/cancel", async (req, res) => {
     s.totalPool = Math.max(0, s.totalPool - bet.amount);
     delete s.bets[key];
 
-    res.json({ success: true, refunded: bet.amount });
+    res.json({ success: true, refunded: bet.amount, ...balancePayload(user) });
   } catch (err) {
     console.error("Aviator cancel error:", err);
     res.status(500).json({ error: "Failed to cancel bet" });
@@ -2390,6 +2390,7 @@ app.post("/api/aviator/cashout", async (req, res) => {
       success: true,
       multiplier: bet.cashedOutAt,
       winAmount: win,
+      ...balancePayload(user),
     });
   } catch (err) {
     console.error("Aviator cashout error:", err);
@@ -3056,7 +3057,7 @@ app.post("/api/jetx/bet", async (req, res) => {
     };
     s.totalPool += numAmt;
 
-    res.json({ success: true, roundNumber: s.roundNumber });
+    res.json({ success: true, roundNumber: s.roundNumber, ...balancePayload(user) });
   } catch (err) {
     console.error("JetX bet error:", err);
     res.status(500).json({ error: "Failed to place bet" });
@@ -3097,7 +3098,7 @@ app.post("/api/jetx/cashout", async (req, res) => {
       game: "jetx",
     });
 
-    res.json({ success: true, multiplier: mult, winAmount: win });
+    res.json({ success: true, multiplier: mult, winAmount: win, ...balancePayload(user) });
   } catch (err) {
     console.error("JetX cashout error:", err);
     res.status(500).json({ error: "Failed to cash out" });

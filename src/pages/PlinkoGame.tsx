@@ -211,6 +211,18 @@ const PlinkoGame = () => {
     if (activeWallet === "dollar") setLocalDollarAdj((p) => p - nBet);
     else if (activeWallet === "rupee") setLocalRupeeAdj((p) => p - nBet);
     else setLocalStarAdj((p) => p - nBet);
+
+    try {
+      await reportGameResult({ betAmount: nBet, winAmount: 0, currency: activeWallet, game: "plinko" });
+      refreshBalance();
+    } catch (e) {
+      if (activeWallet === "dollar") setLocalDollarAdj((p) => p + nBet);
+      else if (activeWallet === "rupee") setLocalRupeeAdj((p) => p + nBet);
+      else setLocalStarAdj((p) => p + nBet);
+      console.error(e);
+      return;
+    }
+
     if (soundRef.current) playBetSound();
 
     // Rigging: 9 losses (~0.4x–0.7x) then every 10th bet a ~2x win
@@ -251,7 +263,7 @@ const PlinkoGame = () => {
 
     try {
       await reportGameResult({
-        betAmount: toNativeAmount(bet, currencyMode),
+        betAmount: 0,
         winAmount: toNativeAmount(win, currencyMode),
         currency: activeWallet,
         game: "plinko",

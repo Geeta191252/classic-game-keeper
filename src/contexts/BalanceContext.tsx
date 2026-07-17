@@ -45,6 +45,7 @@ export const BalanceProvider = ({ children }: { children: React.ReactNode }) => 
 
   const refreshBalance = () => {
     queryClient.invalidateQueries({ queryKey: ["balance"] });
+    queryClient.refetchQueries({ queryKey: ["balance"], type: "active" });
   };
 
   return (
