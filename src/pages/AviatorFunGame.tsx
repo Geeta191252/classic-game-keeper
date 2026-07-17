@@ -251,6 +251,7 @@ const AviatorFunGame = () => {
   const { dollarBalance, starBalance, dollarWinning, starWinning, refreshBalance, currencyDisplay, toggleCurrencyDisplay } = useBalanceContext();
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
   const [displayMode, setDisplayMode] = useState<"USD" | "INR" | "STAR">("USD");
+  const autoPickedRef = useRef(false);
 
   const totalDollar = dollarBalance + dollarWinning;
   const totalStar = starBalance + starWinning;
@@ -335,6 +336,23 @@ const AviatorFunGame = () => {
     if (displayMode === "INR") return `₹${val.toFixed(2)}`;
     return `$${val.toFixed(2)}`;
   }, [displayMode]);
+
+  // Auto-pick display mode on first balance load:
+  // If user has no dollars but has stars → STAR. If no dollars & no stars → keep default.
+  // (INR shares dollar wallet, so USD == INR availability.)
+  useEffect(() => {
+    if (autoPickedRef.current) return;
+    if (totalDollar <= 0 && totalStar > 0) {
+      setDisplayMode("STAR");
+      setCurrency("star");
+      setPanel1(prev => ({ ...prev, amount: 30 }));
+      setPanel2(prev => ({ ...prev, amount: 30 }));
+      autoPickedRef.current = true;
+    } else if (totalDollar > 0 || totalStar > 0) {
+      // Balances have loaded — lock in default (USD) so we don't keep re-picking.
+      autoPickedRef.current = true;
+    }
+  }, [totalDollar, totalStar]);
 
   // Balance Auto Refill (Disabled for real money mode)
   useEffect(() => {
@@ -782,7 +800,14 @@ const AviatorFunGame = () => {
     if (panel.status !== "NONE") return;
 
     if (balance < panel.amount) {
-      toast.error("Insufficient Balance!");
+      // Suggest switching to a currency the user actually has funds in.
+      if (displayMode !== "STAR" && totalDollar <= 0 && totalStar > 0) {
+        toast.error("No $ / ₹ balance — switch to STARS to bet.");
+      } else if (displayMode === "STAR" && totalStar <= 0 && totalDollar > 0) {
+        toast.error("No STAR balance — switch to $ or ₹ to bet.");
+      } else {
+        toast.error("Insufficient Balance!");
+      }
       return;
     }
 
