@@ -1217,18 +1217,17 @@ const AviatorFunGame = () => {
                 <div className="panel-body">
                   <div className="control-left">
                     <div className="bet-input-box">
-                      <button className="value-change-btn minus" onClick={() => adjustBet("panel-1", currency === "dollar" ? -1 : -10)} disabled={panel1.status !== "NONE"}>&minus;</button>
+                      <button className="value-change-btn minus" onClick={() => adjustBet("panel-1", -stepUnit)} disabled={panel1.status !== "NONE"}>&minus;</button>
                       <div className="input-wrapper">
                         <input type="number" readOnly value={panel1.amount} />
-                        <span className="input-currency">{currency === "dollar" ? "USD" : "STR"}</span>
+                        <span className="input-currency">{unitLabel}</span>
                       </div>
-                      <button className="value-change-btn plus" onClick={() => adjustBet("panel-1", currency === "dollar" ? 1 : 10)} disabled={panel1.status !== "NONE"}>+</button>
+                      <button className="value-change-btn plus" onClick={() => adjustBet("panel-1", stepUnit)} disabled={panel1.status !== "NONE"}>+</button>
                     </div>
                     <div className="quick-bets-grid">
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-1", currency === "dollar" ? 5 : 50)} disabled={panel1.status !== "NONE"}>{currency === "dollar" ? "5" : "50"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-1", currency === "dollar" ? 10 : 100)} disabled={panel1.status !== "NONE"}>{currency === "dollar" ? "10" : "100"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-1", currency === "dollar" ? 20 : 250)} disabled={panel1.status !== "NONE"}>{currency === "dollar" ? "20" : "250"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-1", currency === "dollar" ? 50 : 500)} disabled={panel1.status !== "NONE"}>{currency === "dollar" ? "50" : "500"}</button>
+                      {presets.map((v, i) => (
+                        <button key={i} className="quick-btn" onClick={() => handleQuickPreset("panel-1", v)} disabled={panel1.status !== "NONE"}>{v}</button>
+                      ))}
                     </div>
                   </div>
                   
@@ -1298,18 +1297,17 @@ const AviatorFunGame = () => {
                 <div className="panel-body collapse-target">
                   <div className="control-left">
                     <div className="bet-input-box">
-                      <button className="value-change-btn minus" onClick={() => adjustBet("panel-2", currency === "dollar" ? -1 : -10)} disabled={panel2.status !== "NONE"}>&minus;</button>
+                      <button className="value-change-btn minus" onClick={() => adjustBet("panel-2", -stepUnit)} disabled={panel2.status !== "NONE"}>&minus;</button>
                       <div className="input-wrapper">
                         <input type="number" readOnly value={panel2.amount} />
-                        <span className="input-currency">{currency === "dollar" ? "USD" : "STR"}</span>
+                        <span className="input-currency">{unitLabel}</span>
                       </div>
-                      <button className="value-change-btn plus" onClick={() => adjustBet("panel-2", currency === "dollar" ? 1 : 10)} disabled={panel2.status !== "NONE"}>+</button>
+                      <button className="value-change-btn plus" onClick={() => adjustBet("panel-2", stepUnit)} disabled={panel2.status !== "NONE"}>+</button>
                     </div>
                     <div className="quick-bets-grid">
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-2", currency === "dollar" ? 5 : 50)} disabled={panel2.status !== "NONE"}>{currency === "dollar" ? "5" : "50"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-2", currency === "dollar" ? 10 : 100)} disabled={panel2.status !== "NONE"}>{currency === "dollar" ? "10" : "100"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-2", currency === "dollar" ? 20 : 250)} disabled={panel2.status !== "NONE"}>{currency === "dollar" ? "20" : "250"}</button>
-                      <button className="quick-btn" onClick={() => handleQuickPreset("panel-2", currency === "dollar" ? 50 : 500)} disabled={panel2.status !== "NONE"}>{currency === "dollar" ? "50" : "500"}</button>
+                      {presets.map((v, i) => (
+                        <button key={i} className="quick-btn" onClick={() => handleQuickPreset("panel-2", v)} disabled={panel2.status !== "NONE"}>{v}</button>
+                      ))}
                     </div>
                   </div>
                   
@@ -1423,7 +1421,7 @@ const AviatorFunGame = () => {
             <span className="modal-desc">Enter amount to add in currency values:</span>
             <div className="modal-input-container">
               <input type="number" min="10" max="100000" value={depositAmount} onChange={(e) => setDepositAmount(parseInt(e.target.value) || 0)} />
-              <span className="modal-currency">{currency === "dollar" ? "USD" : "STR"}</span>
+              <span className="modal-currency">{unitLabel}</span>
             </div>
             <div className="modal-presets">
               <button className="preset-btn" onClick={() => setDepositAmount(p => p + (currency === "dollar" ? 10 : 100))}>+{currency === "dollar" ? "10" : "100"}</button>
@@ -1445,7 +1443,7 @@ const AviatorFunGame = () => {
             <span className="modal-desc">Enter amount to withdraw:</span>
             <div className="modal-input-container">
               <input type="number" min="10" max="100000" value={withdrawAmount} onChange={(e) => setWithdrawAmount(parseInt(e.target.value) || 0)} />
-              <span className="modal-currency">{currency === "dollar" ? "USD" : "STR"}</span>
+              <span className="modal-currency">{unitLabel}</span>
             </div>
             <div className="modal-presets">
               <button className="preset-btn" onClick={() => setWithdrawAmount(currency === "dollar" ? 10 : 100)}>{currency === "dollar" ? "10" : "100"}</button>
