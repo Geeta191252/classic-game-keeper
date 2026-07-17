@@ -649,7 +649,7 @@ const ChickenClassicGame = () => {
             <div className="cashout-mult">{cashoutDetails.multiplier}</div>
             <div className="cashout-sub">Winnings:</div>
             <div className="cashout-winnings">
-              {currency === "dollar" ? `$${cashoutDetails.winAmount.toFixed(2)}` : `★${Math.floor(cashoutDetails.winAmount).toLocaleString()}`}
+              {currencyMode === "STAR" ? `★${Math.floor(cashoutDetails.winAmount).toLocaleString()}` : `${currencySymbol(currencyMode)}${cashoutDetails.winAmount.toFixed(2)}`}
             </div>
             <button className="cashout-ok-btn" onClick={closeWinModal}>
               Collect
