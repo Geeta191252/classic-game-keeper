@@ -277,15 +277,16 @@ const ChickenClassicGame = () => {
       toast.error(`Maximum bet amount is ${currency === "dollar" ? "$1,000" : "10,000 Stars"}`);
       return;
     }
-    if (betAmount > balance) {
-      toast.error("Insufficient Balance!");
+    const nativeBet = toNativeAmount(betAmount, currencyMode);
+    if (nativeBet > balance) {
+      toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
       return;
     }
 
     // Deduct Stake via real API
     try {
       await reportGameResult({
-        betAmount: betAmount,
+        betAmount: nativeBet,
         winAmount: 0,
         currency,
         game: "chicken_classic"
