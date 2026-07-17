@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Volume2, VolumeX } from "lucide-react";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { type CurrencyType, reportGameResult } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./ChickenClassicGame.css";
 
@@ -144,6 +146,8 @@ const ChickenClassicGame = () => {
 
   // Wallet currency selector
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  useEffect(() => { setCurrency(currencyMode === "STAR" ? "star" : "dollar"); }, [currencyMode]);
 
   // Real balance — always from context (no fake demo balance)
   const totalDollar = dollarBalance + dollarWinning;
@@ -407,44 +411,7 @@ const ChickenClassicGame = () => {
         </div>
         
         <div className="header-right flex items-center gap-1.5">
-          {/* Dollar (USD) Balance */}
-          <div 
-            className={`balance-display cursor-pointer transition-all ${currency === "dollar" ? "ring-1 ring-[#00a2e8] bg-[#00a2e8]/10" : "bg-slate-900 opacity-60"}`}
-            onClick={() => {
-              if (phase === "betting") {
-                setCurrency("dollar");
-              }
-            }}
-          >
-            <span className="text-[#00a2e8] font-bold">$</span>
-            <span>{totalDollar.toFixed(2)}</span>
-          </div>
-          
-          {/* INR Balance */}
-          <div 
-            className={`balance-display cursor-pointer transition-all ${currency === "dollar" ? "ring-1 ring-emerald-500 bg-emerald-500/10 text-emerald-400" : "bg-slate-900 opacity-60 text-emerald-500/70"}`}
-            onClick={() => {
-              if (phase === "betting") {
-                setCurrency("dollar");
-              }
-            }}
-          >
-            <span className="text-emerald-400 font-bold">₹</span>
-            <span>{(totalDollar * 85).toFixed(2)}</span>
-          </div>
-
-          {/* Star Balance */}
-          <div 
-            className={`balance-display cursor-pointer transition-all ${currency === "star" ? "ring-1 ring-amber-500 bg-amber-500/10 text-amber-400" : "bg-slate-900 opacity-60 text-amber-500/70"}`}
-            onClick={() => {
-              if (phase === "betting") {
-                setCurrency("star");
-              }
-            }}
-          >
-            <span className="text-amber-400 font-bold">★</span>
-            <span>{Math.floor(totalStar).toLocaleString()}</span>
-          </div>
+          <GameCurrencyChips mode={currencyMode} onChange={setCurrencyMode} disabled={phase !== "betting"} />
 
           <button className="menu-btn" onClick={() => setShowHowModal(true)} title="How to play">
             <BookOpen size={16} />

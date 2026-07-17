@@ -4,6 +4,8 @@ import { ArrowLeft, ChevronDown, ClipboardList, Menu, MessageCircle, Plus, Troph
 import { useNavigate } from "react-router-dom";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { getTelegramUser, type CurrencyType, fetchAviatorState, placeAviatorBet, cashOutAviator, cancelAviatorBet, type AviatorState } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import logoImg from "@/assets/aviator/logo.png";
 import planeImg from "@/assets/aviator/plane.png";
@@ -46,6 +48,8 @@ const AviatorGame = () => {
   const tgUser = getTelegramUser();
 
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  useEffect(() => { setCurrency(currencyMode === "STAR" ? "star" : "dollar"); }, [currencyMode]);
   const [phase, setPhase] = useState<Phase>("betting");
   const [multiplier, setMultiplier] = useState(1);
   const [crashAt, setCrashAt] = useState(2);
@@ -227,22 +231,7 @@ const AviatorGame = () => {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-8 rounded-full bg-[hsl(265_50%_8%)] border border-primary/40 flex overflow-hidden">
-            <button
-              onClick={() => setCurrency("dollar")}
-              className={`px-2.5 flex items-center gap-1 text-[11px] font-black tracking-wide transition ${currency === "dollar" ? "bg-primary/40 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <span>$</span>
-              <span className="text-foreground">{totalDollar.toFixed(2)}</span>
-            </button>
-            <button
-              onClick={() => setCurrency("star")}
-              className={`px-2.5 flex items-center gap-1 text-[11px] font-black transition border-l border-primary/40 ${currency === "star" ? "bg-primary/40" : ""}`}
-            >
-              <span className="text-yellow-400 text-sm leading-none">★</span>
-              <span className="text-foreground">{Math.floor(totalStar)}</span>
-            </button>
-          </div>
+          <GameCurrencyChips mode={currencyMode} onChange={setCurrencyMode} disabled={phase !== "betting"} />
           <button onClick={() => navigate("/wallet")} className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center" aria-label="Wallet">
             <Plus className="h-4 w-4" />
           </button>

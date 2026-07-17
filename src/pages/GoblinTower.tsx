@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { type CurrencyType, reportGameResult } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./GoblinTower.css";
 
@@ -159,6 +161,12 @@ const GoblinTower = () => {
   const navigate = useNavigate();
   const { dollarBalance, starBalance, dollarWinning, starWinning, refreshBalance, currencyDisplay, toggleCurrencyDisplay } = useBalanceContext();
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  useEffect(() => {
+    const newC = currencyMode === "STAR" ? "star" : "dollar";
+    setCurrency(newC);
+    setBet(newC === "star" ? 30 : 3);
+  }, [currencyMode]);
 
   // States
   const [bet, setBet] = useState(3);
@@ -480,53 +488,7 @@ const GoblinTower = () => {
             </div>
 
             <div className="header-right flex items-center gap-1">
-              {/* Dollar (USD) Balance */}
-              <div 
-                className={`balance-box cursor-pointer transition-all ${currency === "dollar" ? "ring-1 ring-[#00a2e8] bg-[#00a2e8]/10" : "bg-slate-900 opacity-60"}`}
-                onClick={() => {
-                  if (!isPlaying) {
-                    setCurrency("dollar");
-                    setBet(3);
-                  }
-                }}
-              >
-                <span className="balance-value">${totalDollar.toFixed(2)}</span>
-                <div className="currency-icon">
-                  <span className="currency-symbol text-[#00a2e8] font-bold">$</span>
-                </div>
-              </div>
-              
-              {/* INR Balance */}
-              <div 
-                className={`balance-box cursor-pointer transition-all ${currency === "dollar" ? "ring-1 ring-emerald-500 bg-emerald-500/10 text-emerald-400" : "bg-slate-900 opacity-60 text-emerald-500/70"}`}
-                onClick={() => {
-                  if (!isPlaying) {
-                    setCurrency("dollar");
-                    setBet(3);
-                  }
-                }}
-              >
-                <span className="balance-value">₹{(totalDollar * 85).toFixed(2)}</span>
-                <div className="currency-icon">
-                  <span className="currency-symbol font-black text-[9px]">INR</span>
-                </div>
-              </div>
-
-              {/* Star Balance */}
-              <div 
-                className={`balance-box cursor-pointer transition-all ${currency === "star" ? "ring-1 ring-amber-500 bg-amber-500/10 text-amber-400" : "bg-slate-900 opacity-60 text-amber-500/70"}`}
-                onClick={() => {
-                  if (!isPlaying) {
-                    setCurrency("star");
-                    setBet(30);
-                  }
-                }}
-              >
-                <span className="balance-value">{Math.floor(totalStar).toLocaleString()}</span>
-                <div className="currency-icon">
-                  <span className="currency-symbol">★</span>
-                </div>
-              </div>
+              <GameCurrencyChips mode={currencyMode} onChange={setCurrencyMode} disabled={isPlaying} />
 
               {/* Hamburger Menu Toggle */}
               <button className="menu-btn" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(true); }}>

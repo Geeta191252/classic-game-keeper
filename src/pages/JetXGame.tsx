@@ -12,6 +12,8 @@ import {
   type CurrencyType,
   type JetXState,
 } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode } from "@/lib/gameCurrency";
 import gameJetx from "@/assets/game-jetx.jpg";
 
 type Phase = "betting" | "flying" | "crashed";
@@ -29,6 +31,8 @@ const JetXGame = () => {
   const tgUser = getTelegramUser();
 
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  useEffect(() => { setCurrency(currencyMode === "STAR" ? "star" : "dollar"); }, [currencyMode]);
   const [phase, setPhase] = useState<Phase>("betting");
   const [multiplier, setMultiplier] = useState(1);
   const [crashAt, setCrashAt] = useState<number | null>(null);
@@ -148,19 +152,9 @@ const JetXGame = () => {
         </div>
       </div>
 
-      {/* Currency toggle */}
-      <div className="flex gap-2 px-4 mt-3">
-        {(["dollar", "star"] as CurrencyType[]).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCurrency(c)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
-              currency === c ? "bg-red-500/20 text-red-300 border border-red-500/50" : "bg-white/5 text-white/50"
-            }`}
-          >
-            {c === "dollar" ? "$ Dollar" : "⭐ Star"}
-          </button>
-        ))}
+      {/* Currency chips */}
+      <div className="flex justify-center px-4 mt-3">
+        <GameCurrencyChips mode={currencyMode} onChange={setCurrencyMode} disabled={phase !== "betting"} />
       </div>
 
       {/* History */}
