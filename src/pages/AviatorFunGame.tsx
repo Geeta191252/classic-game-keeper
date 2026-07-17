@@ -283,10 +283,12 @@ const AviatorFunGame = () => {
   const [waitingCountdown, setWaitingCountdown] = useState(5.0);
   const [historyList, setHistoryList] = useState<number[]>(INITIAL_HISTORY);
   const [simPlayers, setSimPlayers] = useState<SimulatedPlayer[]>([]);
+  const [serverBets, setServerBets] = useState<ServerBet[]>([]);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"all-bets" | "my-bets" | "top-bets">("all-bets");
   const [roundTotalWin, setRoundTotalWin] = useState(0);
   const [historyDropdownOpen, setHistoryDropdownOpen] = useState(false);
   const isRiggedRef = useRef(false);
+  const myNameRef = useRef<string>(getTelegramUser()?.first_name || "Player");
 
   // References for values to avoid react state polling lag in frame updates
   const stateRef = useRef({
