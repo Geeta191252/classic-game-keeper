@@ -699,7 +699,7 @@ const PlinkoGame = () => {
                 border: "1px solid hsla(45,80%,55%,0.35)",
               }}
             >
-              +{p}{currencyMode === "USD" ? "$" : currencyMode === "INR" ? "₹" : "⭐"}
+              +{currencyMode === "STAR" ? `${p}⭐` : `${currencySymbol(currencyMode)}${p}`}
             </button>
           ))}
           <button
