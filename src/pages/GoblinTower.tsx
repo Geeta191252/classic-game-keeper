@@ -344,7 +344,7 @@ const GoblinTower = () => {
       try {
         await reportGameResult({
           betAmount: 0,
-          winAmount: potentialWin,
+          winAmount: toNativeAmount(potentialWin, currencyMode),
           currency,
           game: "goblin_tower"
         });
@@ -364,7 +364,7 @@ const GoblinTower = () => {
       setOverlay({
         open: true,
         title: "CONGRATULATIONS!",
-        text: `You successfully climbed the Goblin Tower and won ${currency === "star" ? "★" : "$"}${potentialWin.toFixed(2)}!`,
+        text: `You successfully climbed the Goblin Tower and won ${currencySymbol(currencyMode)}${potentialWin.toFixed(2)}!`,
         isWin: true
       });
     }
@@ -378,7 +378,7 @@ const GoblinTower = () => {
     setOverlay({
       open: true,
       title: "YOU HIT A GOBLIN!",
-      text: `You lost your bet of ${currency === "star" ? "★" : "$"}${bet.toFixed(2)}.`,
+      text: `You lost your bet of ${currencySymbol(currencyMode)}${bet.toFixed(2)}.`,
       isWin: false
     });
   };
@@ -395,7 +395,7 @@ const GoblinTower = () => {
       try {
         await reportGameResult({
           betAmount: 0,
-          winAmount: winVal,
+          winAmount: toNativeAmount(winVal, currencyMode),
           currency,
           game: "goblin_tower"
         });
@@ -416,7 +416,7 @@ const GoblinTower = () => {
     setOverlay({
       open: true,
       title: "CASHED OUT!",
-      text: `You won ${currency === "star" ? "★" : "$"}${winVal.toFixed(2)} (x${mult.toFixed(2)})`,
+      text: `You won ${currencySymbol(currencyMode)}${winVal.toFixed(2)} (x${mult.toFixed(2)})`,
       isWin: true
     });
   };
@@ -588,7 +588,7 @@ const GoblinTower = () => {
                   onClick={handleBetAction}
                   disabled={isPlaying && currentLevel === 0}
                 >
-                  {!isPlaying ? "BET" : currentLevel === 0 ? "CHOOSE A CRATE" : `CASH OUT ${currency === "star" ? "★" : "$"}${(bet * currentMults[currentLevel - 1]).toFixed(2)}`}
+                  {!isPlaying ? "BET" : currentLevel === 0 ? "CHOOSE A CRATE" : `CASH OUT ${currencySymbol(currencyMode)}${(bet * currentMults[currentLevel - 1]).toFixed(2)}`}
                 </button>
 
                 {/* Difficulty selector dropdown */}
@@ -634,7 +634,7 @@ const GoblinTower = () => {
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Total Won:</span>
-                  <span className="stat-value">{currency === "star" ? "★" : "$"}{stats.won.toFixed(2)}</span>
+                  <span className="stat-value">{currencySymbol(currencyMode)}{stats.won.toFixed(2)}</span>
                 </div>
               </div>
             </div>
