@@ -177,10 +177,11 @@ const ChickenClassicGame = () => {
   const scrollRowRef = useRef<HTMLDivElement | null>(null);
   const audioUnlockedRef = useRef(false);
 
-  // Sync bet presets on currency change
+  // Sync bet presets on currency mode change
   useEffect(() => {
-    setBetAmount(currency === "dollar" ? 0.5 : 10);
-  }, [currency]);
+    setBetAmount(currencyMode === "USD" ? 0.5 : currencyMode === "INR" ? 50 : 10);
+  }, [currencyMode]);
+
 
 
   const unlockAudio = () => {
