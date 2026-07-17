@@ -2321,7 +2321,18 @@ app.post("/api/aviator/cashout", async (req, res) => {
     // they always succeed. Rigging is still enforced via cumulative-budget crashAt capping below.
 
     const elapsed = Date.now() - s.flightStartTime;
-    const mult = Math.min(aviatorMultiplierAt(elapsed), s.crashAt);
+    let mult = Math.min(aviatorMultiplierAt(elapsed), s.crashAt);
+
+    // HARD PER-ROUND CAP: this cashout cannot push round payouts above (1 - profitPct%) of round pool.
+    if (!s.manualOverride) {
+      const profitPct = s.profitPct || (await getAviatorProfitPercent());
+      const roundBudget = (s.totalPool || 0) * (1 - profitPct / 100);
+      const roundRemaining = Math.max(0, roundBudget - (s.totalPaidOut || 0));
+      const maxWin = roundRemaining;
+      const maxMult = bet.amount > 0 ? maxWin / bet.amount : 1.0;
+      if (maxMult < mult) mult = Math.max(1.0, Number(maxMult.toFixed(2)));
+    }
+
     const win = Number((bet.amount * mult).toFixed(2));
 
     bet.cashedOutAt = Number(mult.toFixed(2));
