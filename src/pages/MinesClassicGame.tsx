@@ -231,15 +231,17 @@ const MinesClassicGame = () => {
   const handleMinBet = () => {
     unlockAudio();
     audioRef.current.playClick();
-    setBetInputStr(currency === "dollar" ? "0.10" : "10");
+    setBetInputStr(currencyMode === "USD" ? "0.10" : currencyMode === "INR" ? "10" : "10");
   };
 
   const handleMaxBet = () => {
     unlockAudio();
     audioRef.current.playClick();
-    const maxVal = currency === "dollar" ? 500 : 5000;
-    setBetInputStr(Math.min(balance, maxVal).toString());
+    const maxDisplay = currencyMode === "USD" ? 500 : currencyMode === "INR" ? 50000 : 5000;
+    const displayBal = currencyMode === "INR" ? balance * 85 : balance;
+    setBetInputStr(Math.min(displayBal, maxDisplay).toString());
   };
+
 
   const handlePresetSelect = (val: number) => {
     unlockAudio();
