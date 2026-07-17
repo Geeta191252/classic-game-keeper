@@ -13,7 +13,7 @@ import {
   type JetXState,
 } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode } from "@/lib/gameCurrency";
+import { GameCurrencyMode, toNativeAmount, toDisplayAmount, currencySymbol, INR_RATE } from "@/lib/gameCurrency";
 import gameJetx from "@/assets/game-jetx.jpg";
 
 type Phase = "betting" | "flying" | "crashed";
@@ -32,7 +32,10 @@ const JetXGame = () => {
 
   const [currency, setCurrency] = useState<CurrencyType>("dollar");
   const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
-  useEffect(() => { setCurrency(currencyMode === "STAR" ? "star" : "dollar"); }, [currencyMode]);
+  useEffect(() => {
+    setCurrency(currencyMode === "STAR" ? "star" : "dollar");
+    setBetAmount(currencyMode === "INR" ? 85 : currencyMode === "STAR" ? 10 : 1);
+  }, [currencyMode]);
   const [phase, setPhase] = useState<Phase>("betting");
   const [multiplier, setMultiplier] = useState(1);
   const [crashAt, setCrashAt] = useState<number | null>(null);
@@ -50,6 +53,9 @@ const JetXGame = () => {
   const lastRoundRef = useRef(0);
 
   const totalBal = currency === "dollar" ? dollarBalance + dollarWinning : starBalance + starWinning;
+  const displayBalance = toDisplayAmount(totalBal, currencyMode);
+  const modeSymbol = currencySymbol(currencyMode);
+  const fmtMode = (v: number) => `${modeSymbol}${v.toFixed(2)}`;
 
   // Poll server state
   useEffect(() => {
@@ -92,24 +98,25 @@ const JetXGame = () => {
   const handleBet = useCallback(async () => {
     if (!canBet) return;
     if (betAmount <= 0) return toast.error("Enter amount");
-    if (betAmount > totalBal) return toast.error("Insufficient balance");
+    const nativeBet = toNativeAmount(betAmount, currencyMode);
+    if (nativeBet > totalBal) return toast.error(`Insufficient ${modeSymbol} balance`);
     setPlacing(true);
     try {
       await placeJetXBet({
         userId: tgUser?.id || "demo",
-        amount: betAmount,
+        amount: nativeBet,
         currency,
         firstName: tgUser?.first_name,
       });
       setMyBet({ amount: betAmount, cashedOutAt: null, winAmount: 0 });
       refreshBalance();
-      toast.success(`Bet ${fmt(betAmount, currency)} placed`);
+      toast.success(`Bet ${fmtMode(betAmount)} placed`);
     } catch (e: any) {
       toast.error(e?.message || "Bet failed");
     } finally {
       setPlacing(false);
     }
-  }, [canBet, betAmount, totalBal, tgUser, currency, refreshBalance]);
+  }, [canBet, betAmount, totalBal, tgUser, currency, currencyMode, modeSymbol, refreshBalance]);
 
   const handleCashout = useCallback(async () => {
     if (!canCashout) return;
@@ -118,7 +125,7 @@ const JetXGame = () => {
       const res = await cashOutJetX(tgUser?.id || "demo", currency);
       setMyBet((prev) => prev ? { ...prev, cashedOutAt: res.multiplier, winAmount: res.winAmount } : prev);
       refreshBalance();
-      toast.success(`Won ${fmt(res.winAmount, currency)} @ ${res.multiplier.toFixed(2)}x`);
+      toast.success(`Won ${fmtMode(toDisplayAmount(res.winAmount, currencyMode))} @ ${res.multiplier.toFixed(2)}x`);
     } catch (e: any) {
       toast.error(e?.message || "Cashout failed");
     } finally {
@@ -148,7 +155,7 @@ const JetXGame = () => {
         </div>
         <div className="text-right">
           <div className="text-[10px] text-white/50">Balance</div>
-          <div className="text-sm font-bold">{fmt(totalBal, currency)}</div>
+          <div className="text-sm font-bold">{fmtMode(displayBalance)}</div>
         </div>
       </div>
 
@@ -242,13 +249,13 @@ const JetXGame = () => {
               className="p-3 rounded-lg bg-white/5 active:scale-90"><Plus className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-6 gap-1.5 mt-3">
-            {PRESETS[currency].map((p) => (
+            {(currencyMode === "INR" ? PRESETS.dollar.map(p => p * INR_RATE) : PRESETS[currency]).map((p) => (
               <button
                 key={p}
                 onClick={() => setBetAmount(p)}
                 className="text-[11px] font-bold py-1.5 rounded-md bg-white/5 hover:bg-white/10"
               >
-                {p}
+                {modeSymbol}{p}
               </button>
             ))}
           </div>
@@ -266,17 +273,17 @@ const JetXGame = () => {
                   boxShadow: "0 8px 24px hsla(140, 70%, 45%, 0.4)",
                 }}
               >
-                CASH OUT {fmt(myBet!.amount * 0.98 * multiplier, currency)}
+                CASH OUT {fmtMode(myBet!.amount * 0.98 * multiplier)}
               </motion.button>
             ) : myBet?.cashedOutAt ? (
               <div className="w-full py-4 rounded-xl font-black text-center text-lg"
                 style={{ background: "hsla(140, 70%, 45%, 0.15)", color: "hsl(140 70% 65%)" }}>
-                ✓ Won {fmt(myBet.winAmount, currency)} @ {myBet.cashedOutAt.toFixed(2)}x
+                ✓ Won {fmtMode(toDisplayAmount(myBet.winAmount, currencyMode))} @ {myBet.cashedOutAt.toFixed(2)}x
               </div>
             ) : myBet ? (
               <div className="w-full py-4 rounded-xl font-black text-center text-lg"
                 style={{ background: "hsla(0, 70%, 55%, 0.15)", color: "hsl(0 80% 70%)" }}>
-                {phase === "crashed" ? `💥 Lost ${fmt(myBet.amount, currency)}` : `Waiting to fly...`}
+                {phase === "crashed" ? `💥 Lost ${fmtMode(myBet.amount)}` : `Waiting to fly...`}
               </div>
             ) : (
               <motion.button
@@ -291,7 +298,7 @@ const JetXGame = () => {
                   boxShadow: canBet ? "0 8px 24px hsla(0, 80%, 55%, 0.4)" : "none",
                 }}
               >
-                {placing ? "Placing..." : phase === "betting" ? `BET ${fmt(betAmount, currency)}` : "Wait for next round"}
+                {placing ? "Placing..." : phase === "betting" ? `BET ${fmtMode(betAmount)}` : "Wait for next round"}
               </motion.button>
             )}
           </div>

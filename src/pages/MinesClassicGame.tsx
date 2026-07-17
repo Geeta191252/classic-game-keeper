@@ -4,7 +4,7 @@ import { ArrowLeft, BookOpen, Volume2, VolumeX } from "lucide-react";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { type CurrencyType, reportGameResult } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode } from "@/lib/gameCurrency";
+import { GameCurrencyMode, toNativeAmount, currencySymbol } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./MinesClassicGame.css";
 
@@ -288,15 +288,16 @@ const MinesClassicGame = () => {
       toast.error(`Maximum bet is ${currency === "dollar" ? "$1,000" : "10,000 Stars"}`);
       return;
     }
-    if (parsedBet > balance) {
-      toast.error("Insufficient Balance!");
+    const nativeBet = toNativeAmount(parsedBet, currencyMode);
+    if (nativeBet > balance) {
+      toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
       return;
     }
 
     // Deduct Stake
     try {
       await reportGameResult({
-        betAmount: parsedBet,
+        betAmount: nativeBet,
         winAmount: 0,
         currency,
         game: "mines_classic"
@@ -417,7 +418,7 @@ const MinesClassicGame = () => {
     try {
       await reportGameResult({
         betAmount: 0, // already deducted
-        winAmount: winAmt,
+        winAmount: toNativeAmount(winAmt, currencyMode),
         currency,
         game: "mines_classic"
       });

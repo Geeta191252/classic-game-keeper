@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { type CurrencyType, reportGameResult } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode } from "@/lib/gameCurrency";
+import { GameCurrencyMode, toNativeAmount, currencySymbol, INR_RATE } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./GoblinTower.css";
 
@@ -165,7 +165,7 @@ const GoblinTower = () => {
   useEffect(() => {
     const newC = currencyMode === "STAR" ? "star" : "dollar";
     setCurrency(newC);
-    setBet(newC === "star" ? 30 : 3);
+    setBet(currencyMode === "INR" ? 3 * INR_RATE : newC === "star" ? 30 : 3);
   }, [currencyMode]);
 
   // States
@@ -243,14 +243,15 @@ const GoblinTower = () => {
         isRiggedRef.current = false;
       }
 
-      if (balance < bet) {
-        toast.error("Insufficient Balance!");
+      const nativeBet = toNativeAmount(bet, currencyMode);
+      if (balance < nativeBet) {
+        toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
         return;
       }
 
       try {
         await reportGameResult({
-          betAmount: bet,
+          betAmount: nativeBet,
           winAmount: 0,
           currency,
           game: "goblin_tower"
@@ -343,7 +344,7 @@ const GoblinTower = () => {
       try {
         await reportGameResult({
           betAmount: 0,
-          winAmount: potentialWin,
+          winAmount: toNativeAmount(potentialWin, currencyMode),
           currency,
           game: "goblin_tower"
         });
@@ -363,7 +364,7 @@ const GoblinTower = () => {
       setOverlay({
         open: true,
         title: "CONGRATULATIONS!",
-        text: `You successfully climbed the Goblin Tower and won ${currency === "star" ? "★" : "$"}${potentialWin.toFixed(2)}!`,
+        text: `You successfully climbed the Goblin Tower and won ${currencySymbol(currencyMode)}${potentialWin.toFixed(2)}!`,
         isWin: true
       });
     }
@@ -377,7 +378,7 @@ const GoblinTower = () => {
     setOverlay({
       open: true,
       title: "YOU HIT A GOBLIN!",
-      text: `You lost your bet of ${currency === "star" ? "★" : "$"}${bet.toFixed(2)}.`,
+      text: `You lost your bet of ${currencySymbol(currencyMode)}${bet.toFixed(2)}.`,
       isWin: false
     });
   };
@@ -394,7 +395,7 @@ const GoblinTower = () => {
       try {
         await reportGameResult({
           betAmount: 0,
-          winAmount: winVal,
+          winAmount: toNativeAmount(winVal, currencyMode),
           currency,
           game: "goblin_tower"
         });
@@ -415,7 +416,7 @@ const GoblinTower = () => {
     setOverlay({
       open: true,
       title: "CASHED OUT!",
-      text: `You won ${currency === "star" ? "★" : "$"}${winVal.toFixed(2)} (x${mult.toFixed(2)})`,
+      text: `You won ${currencySymbol(currencyMode)}${winVal.toFixed(2)} (x${mult.toFixed(2)})`,
       isWin: true
     });
   };
@@ -587,7 +588,7 @@ const GoblinTower = () => {
                   onClick={handleBetAction}
                   disabled={isPlaying && currentLevel === 0}
                 >
-                  {!isPlaying ? "BET" : currentLevel === 0 ? "CHOOSE A CRATE" : `CASH OUT ${currency === "star" ? "★" : "$"}${(bet * currentMults[currentLevel - 1]).toFixed(2)}`}
+                  {!isPlaying ? "BET" : currentLevel === 0 ? "CHOOSE A CRATE" : `CASH OUT ${currencySymbol(currencyMode)}${(bet * currentMults[currentLevel - 1]).toFixed(2)}`}
                 </button>
 
                 {/* Difficulty selector dropdown */}
@@ -633,7 +634,7 @@ const GoblinTower = () => {
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Total Won:</span>
-                  <span className="stat-value">{currency === "star" ? "★" : "$"}{stats.won.toFixed(2)}</span>
+                  <span className="stat-value">{currencySymbol(currencyMode)}{stats.won.toFixed(2)}</span>
                 </div>
               </div>
             </div>

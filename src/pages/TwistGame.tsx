@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { getTelegramUser, type CurrencyType, reportGameResult } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode } from "@/lib/gameCurrency";
+import { GameCurrencyMode, toNativeAmount, currencySymbol, INR_RATE } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./TwistGame.css";
 
@@ -268,7 +268,7 @@ const TwistGame = () => {
   useEffect(() => {
     const newC = currencyMode === "STAR" ? "star" : "dollar";
     setCurrency(newC);
-    setBet(newC === "star" ? 30 : 3);
+    setBet(currencyMode === "INR" ? 3 * INR_RATE : newC === "star" ? 30 : 3);
   }, [currencyMode]);
   const [bet, setBet] = useState(3);
   const [lastWin, setLastWin] = useState<number | null>(null);
@@ -841,15 +841,16 @@ const TwistGame = () => {
         isRiggedRef.current = false;
       }
 
-      if (balance < bet) {
-        toast.error("Insufficient Balance!");
+      const nativeBet = toNativeAmount(bet, currencyMode);
+      if (balance < nativeBet) {
+        toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
         setAutoplay(false);
         return;
       }
       
       try {
         await reportGameResult({
-          betAmount: bet,
+          betAmount: nativeBet,
           winAmount: 0,
           currency,
           game: "twist"
@@ -1035,7 +1036,7 @@ const TwistGame = () => {
         // Add winnings to database
         await reportGameResult({
           betAmount: 0,
-          winAmount: winnings,
+          winAmount: toNativeAmount(winnings, currencyMode),
           currency,
           game: "twist"
         });
@@ -1045,7 +1046,7 @@ const TwistGame = () => {
         setIsRoundActive(false);
         
         synthRef.current.playCashoutSuccess();
-        toast.success(`Won ${currency === "star" ? "★" : "$"}${winnings.toFixed(2)} !`);
+        toast.success(`Won ${currencySymbol(currencyMode)}${winnings.toFixed(2)} !`);
         
         saveHistoryRecord(mult.toFixed(2) + "x", winnings, "Full");
         
@@ -1086,7 +1087,7 @@ const TwistGame = () => {
         // Report part winnings to backend
         await reportGameResult({
           betAmount: 0,
-          winAmount: totalPartWinnings,
+          winAmount: toNativeAmount(totalPartWinnings, currencyMode),
           currency,
           game: "twist"
         });
@@ -1096,7 +1097,7 @@ const TwistGame = () => {
         setLastWin(totalPartWinnings);
         
         synthRef.current.playCashoutSuccess();
-        toast.success(`Secured ${currency === "star" ? "★" : "$"}${totalPartWinnings.toFixed(2)} !`);
+        toast.success(`Secured ${currencySymbol(currencyMode)}${totalPartWinnings.toFixed(2)} !`);
         
         saveHistoryRecord(totalPartMult.toFixed(2) + "x", totalPartWinnings, "Part");
       } catch {

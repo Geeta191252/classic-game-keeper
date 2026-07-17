@@ -4,7 +4,7 @@ import { ArrowLeft, BookOpen, Volume2, VolumeX } from "lucide-react";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { type CurrencyType, reportGameResult } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode } from "@/lib/gameCurrency";
+import { GameCurrencyMode, toNativeAmount, currencySymbol } from "@/lib/gameCurrency";
 import { toast } from "sonner";
 import "./ChickenClassicGame.css";
 
@@ -277,15 +277,16 @@ const ChickenClassicGame = () => {
       toast.error(`Maximum bet amount is ${currency === "dollar" ? "$1,000" : "10,000 Stars"}`);
       return;
     }
-    if (betAmount > balance) {
-      toast.error("Insufficient Balance!");
+    const nativeBet = toNativeAmount(betAmount, currencyMode);
+    if (nativeBet > balance) {
+      toast.error(`Insufficient ${currencySymbol(currencyMode)} Balance!`);
       return;
     }
 
     // Deduct Stake via real API
     try {
       await reportGameResult({
-        betAmount: betAmount,
+        betAmount: nativeBet,
         winAmount: 0,
         currency,
         game: "chicken_classic"
@@ -374,7 +375,7 @@ const ChickenClassicGame = () => {
     try {
       await reportGameResult({
         betAmount: 0,
-        winAmount: winAmt,
+        winAmount: toNativeAmount(winAmt, currencyMode),
         currency,
         game: "chicken_classic"
       });
