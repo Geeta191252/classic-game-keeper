@@ -570,12 +570,13 @@ const PlinkoGame = () => {
                   {lastMult}x
                 </div>
                 <div className="font-black text-base" style={{ color: "hsl(0 0% 100%)" }}>
-                  {lastWin >= bet ? "+ " : ""}
-                  {currencyMode === "USD" ? "$" : currencyMode === "INR" ? "₹" : ""}
+                  {lastWin > 0 ? "Won " : "Lost "}
+                  {currencyMode === "STAR" ? "" : currencySymbol(currencyMode)}
                   {lastWin.toFixed(2)}
                   {activeWallet === "star" ? " ⭐" : ""}
                 </div>
               </div>
+
             </motion.div>
           )}
         </AnimatePresence>
