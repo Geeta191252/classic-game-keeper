@@ -2117,7 +2117,8 @@ async function aviatorPhaseTick(currency) {
     // Dynamic house-edge cap (skipped when admin manual override is active).
     // Uses CUMULATIVE budget so individual rounds are allowed to lose if house is ahead overall.
     if (!s.manualOverride) {
-      const cumBudget = (s.cumPool || 0) * (1 - (s.profitPct || 50) / 100);
+      const profitPct = s.profitPct || 50;
+      const cumBudget = (s.cumPool || 0) * (1 - profitPct / 100);
       const remainingBudget = Math.max(0, cumBudget - (s.cumPaid || 0));
       let maxRemainingBet = 0;
       for (const k of Object.keys(s.bets)) {
@@ -2128,6 +2129,23 @@ async function aviatorPhaseTick(currency) {
       if (maxRemainingBet > 0 && maxRemainingBet * s.crashAt > remainingBudget) {
         const dynCap = Math.max(1.0, remainingBudget / maxRemainingBet);
         if (dynCap < s.crashAt) s.crashAt = Number(dynCap.toFixed(2));
+      }
+
+      // HARD PER-ROUND CAP: owner must keep >= profitPct% of THIS round's pool.
+      // Total payouts for this round cannot exceed totalPool * (1 - profitPct/100).
+      const roundBudget = (s.totalPool || 0) * (1 - profitPct / 100);
+      const roundRemaining = Math.max(0, roundBudget - (s.totalPaidOut || 0));
+      if (roundRemaining <= 0 && (s.totalPool || 0) > 0) {
+        // No budget left this round → crash immediately
+        s.crashAt = Math.max(1.0, Number(aviatorMultiplierAt(elapsed).toFixed(2)));
+      } else {
+        const remainingBetSum = Object.values(s.bets)
+          .filter((b) => !b.cashedOutAt)
+          .reduce((a, b) => a + b.amount, 0);
+        if (remainingBetSum > 0 && remainingBetSum * s.crashAt > roundRemaining) {
+          const roundCap = Math.max(1.0, roundRemaining / remainingBetSum);
+          if (roundCap < s.crashAt) s.crashAt = Number(roundCap.toFixed(2));
+        }
       }
     }
 
@@ -2303,7 +2321,18 @@ app.post("/api/aviator/cashout", async (req, res) => {
     // they always succeed. Rigging is still enforced via cumulative-budget crashAt capping below.
 
     const elapsed = Date.now() - s.flightStartTime;
-    const mult = Math.min(aviatorMultiplierAt(elapsed), s.crashAt);
+    let mult = Math.min(aviatorMultiplierAt(elapsed), s.crashAt);
+
+    // HARD PER-ROUND CAP: this cashout cannot push round payouts above (1 - profitPct%) of round pool.
+    if (!s.manualOverride) {
+      const profitPct = s.profitPct || (await getAviatorProfitPercent());
+      const roundBudget = (s.totalPool || 0) * (1 - profitPct / 100);
+      const roundRemaining = Math.max(0, roundBudget - (s.totalPaidOut || 0));
+      const maxWin = roundRemaining;
+      const maxMult = bet.amount > 0 ? maxWin / bet.amount : 1.0;
+      if (maxMult < mult) mult = Math.max(1.0, Number(maxMult.toFixed(2)));
+    }
+
     const win = Number((bet.amount * mult).toFixed(2));
 
     bet.cashedOutAt = Number(mult.toFixed(2));
