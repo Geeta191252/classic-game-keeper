@@ -469,12 +469,13 @@ const BetPanel = ({
     unlockAudio();
     if (phase !== "betting") return;
     if (betAmount <= 0) return;
-    if (betAmount > balance) return;
+    const nativeBet = toNativeAmount(betAmount, currencyMode);
+    if (nativeBet > balance) { toast.error(`Insufficient ${currencySymbol(currencyMode)} balance`); return; }
     if (hasBet || pendingBet) return;
     if (!tgUserId) return;
     setPendingBet(true);
     try {
-      await placeAviatorBet({ userId: tgUserId, amount: betAmount, currency, firstName: userName, slot: auto ? 2 : 1 });
+      await placeAviatorBet({ userId: tgUserId, amount: nativeBet, currency, firstName: userName, slot: auto ? 2 : 1 });
       setHasBet(true);
       setCashedOutAt(null);
       refreshBalance();
