@@ -122,7 +122,7 @@ const JetXGame = () => {
       const res = await cashOutJetX(tgUser?.id || "demo", currency);
       setMyBet((prev) => prev ? { ...prev, cashedOutAt: res.multiplier, winAmount: res.winAmount } : prev);
       refreshBalance();
-      toast.success(`Won ${fmt(res.winAmount, currency)} @ ${res.multiplier.toFixed(2)}x`);
+      toast.success(`Won ${fmtMode(toDisplayAmount(res.winAmount, currencyMode))} @ ${res.multiplier.toFixed(2)}x`);
     } catch (e: any) {
       toast.error(e?.message || "Cashout failed");
     } finally {
@@ -270,17 +270,17 @@ const JetXGame = () => {
                   boxShadow: "0 8px 24px hsla(140, 70%, 45%, 0.4)",
                 }}
               >
-                CASH OUT {fmt(myBet!.amount * 0.98 * multiplier, currency)}
+                CASH OUT {fmtMode(myBet!.amount * 0.98 * multiplier)}
               </motion.button>
             ) : myBet?.cashedOutAt ? (
               <div className="w-full py-4 rounded-xl font-black text-center text-lg"
                 style={{ background: "hsla(140, 70%, 45%, 0.15)", color: "hsl(140 70% 65%)" }}>
-                ✓ Won {fmt(myBet.winAmount, currency)} @ {myBet.cashedOutAt.toFixed(2)}x
+                ✓ Won {fmtMode(toDisplayAmount(myBet.winAmount, currencyMode))} @ {myBet.cashedOutAt.toFixed(2)}x
               </div>
             ) : myBet ? (
               <div className="w-full py-4 rounded-xl font-black text-center text-lg"
                 style={{ background: "hsla(0, 70%, 55%, 0.15)", color: "hsl(0 80% 70%)" }}>
-                {phase === "crashed" ? `💥 Lost ${fmt(myBet.amount, currency)}` : `Waiting to fly...`}
+                {phase === "crashed" ? `💥 Lost ${fmtMode(myBet.amount)}` : `Waiting to fly...`}
               </div>
             ) : (
               <motion.button
@@ -295,7 +295,7 @@ const JetXGame = () => {
                   boxShadow: canBet ? "0 8px 24px hsla(0, 80%, 55%, 0.4)" : "none",
                 }}
               >
-                {placing ? "Placing..." : phase === "betting" ? `BET ${fmt(betAmount, currency)}` : "Wait for next round"}
+                {placing ? "Placing..." : phase === "betting" ? `BET ${fmtMode(betAmount)}` : "Wait for next round"}
               </motion.button>
             )}
           </div>
