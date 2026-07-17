@@ -69,9 +69,11 @@ async function getOrCreateUser(telegramUserId) {
 }
 
 function normalizeCurrency(currency) {
-  if (currency === "star") return "star";
-  if (currency === "rupee" || currency === "inr") return "rupee";
-  return "dollar";
+  const value = String(currency || "").toLowerCase();
+  if (value === "star") return "star";
+  if (value === "rupee" || value === "inr") return "rupee";
+  if (value === "dollar" || value === "usd") return "dollar";
+  throw new Error(`Invalid currency: ${currency}`);
 }
 
 function getCurrencyFields(currency) {
@@ -1462,7 +1464,7 @@ app.post("/api/winnings", async (req, res) => {
 
     const numericId = Number(userId);
     if (!numericId || isNaN(numericId)) {
-      return res.json({ dollarWinnings: 0, starWinnings: 0 });
+      return res.json({ dollarWinnings: 0, rupeeWinnings: 0, starWinnings: 0, dollarDeposits: 0, rupeeDeposits: 0, starDeposits: 0 });
     }
 
     // Winnings = ONLY sum of win transactions
@@ -1477,6 +1479,11 @@ app.post("/api/winnings", async (req, res) => {
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
+    const rupeeWins = await Transaction.aggregate([
+      { $match: { telegramId: numericId, type: "win", currency: "rupee", status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
     const dollarDeposits = await Transaction.aggregate([
       { $match: { telegramId: numericId, type: "deposit", currency: "dollar", status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
@@ -1487,10 +1494,17 @@ app.post("/api/winnings", async (req, res) => {
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
 
+    const rupeeDeposits = await Transaction.aggregate([
+      { $match: { telegramId: numericId, type: "deposit", currency: "rupee", status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
     return res.json({
       dollarWinnings: Math.max(0, dollarWins[0]?.total || 0),
+      rupeeWinnings: Math.max(0, rupeeWins[0]?.total || 0),
       starWinnings: Math.max(0, starWins[0]?.total || 0),
       dollarDeposits: Math.max(0, dollarDeposits[0]?.total || 0),
+      rupeeDeposits: Math.max(0, rupeeDeposits[0]?.total || 0),
       starDeposits: Math.max(0, starDeposits[0]?.total || 0),
     });
   } catch (error) {
@@ -2208,7 +2222,12 @@ setInterval(() => {
 
 // GET /api/aviator/state?currency=dollar|star
 app.get("/api/aviator/state", (req, res) => {
-  const currency = normalizeCurrency(req.query.currency);
+  let currency;
+  try {
+    currency = normalizeCurrency(req.query.currency);
+  } catch {
+    return res.status(400).json({ error: "Invalid currency" });
+  }
   const s = aviatorState[currency];
   const now = Date.now();
   let multiplier = 1;
@@ -2277,7 +2296,7 @@ app.post("/api/aviator/bet", async (req, res) => {
     };
     s.totalPool += numAmt;
 
-    res.json({ success: true, roundNumber: s.roundNumber, slot: slotNum });
+    res.json({ success: true, roundNumber: s.roundNumber, slot: slotNum, ...balancePayload(user) });
   } catch (err) {
     console.error("Aviator bet error:", err);
     res.status(500).json({ error: "Failed to place bet" });
@@ -2304,7 +2323,7 @@ app.post("/api/aviator/cancel", async (req, res) => {
     s.totalPool = Math.max(0, s.totalPool - bet.amount);
     delete s.bets[key];
 
-    res.json({ success: true, refunded: bet.amount });
+    res.json({ success: true, refunded: bet.amount, ...balancePayload(user) });
   } catch (err) {
     console.error("Aviator cancel error:", err);
     res.status(500).json({ error: "Failed to cancel bet" });
@@ -2390,6 +2409,7 @@ app.post("/api/aviator/cashout", async (req, res) => {
       success: true,
       multiplier: bet.cashedOutAt,
       winAmount: win,
+      ...balancePayload(user),
     });
   } catch (err) {
     console.error("Aviator cashout error:", err);
@@ -2399,7 +2419,12 @@ app.post("/api/aviator/cashout", async (req, res) => {
 
 // GET /api/aviator/my-bet
 app.get("/api/aviator/my-bet", (req, res) => {
-  const curr = normalizeCurrency(req.query.currency);
+  let curr;
+  try {
+    curr = normalizeCurrency(req.query.currency);
+  } catch {
+    return res.status(400).json({ error: "Invalid currency" });
+  }
   const s = aviatorState[curr];
   const numericId = Number(req.query.userId);
   const slots = [1, 2].map((slot) => {
@@ -2993,7 +3018,12 @@ setInterval(() => { jetxSupervisor("dollar"); jetxSupervisor("rupee"); jetxSuper
 
 // GET /api/jetx/state?currency=dollar|star
 app.get("/api/jetx/state", (req, res) => {
-  const currency = normalizeCurrency(req.query.currency);
+  let currency;
+  try {
+    currency = normalizeCurrency(req.query.currency);
+  } catch {
+    return res.status(400).json({ error: "Invalid currency" });
+  }
   const s = jetxState[currency];
   const now = Date.now();
   let multiplier = 1;
@@ -3056,7 +3086,7 @@ app.post("/api/jetx/bet", async (req, res) => {
     };
     s.totalPool += numAmt;
 
-    res.json({ success: true, roundNumber: s.roundNumber });
+    res.json({ success: true, roundNumber: s.roundNumber, ...balancePayload(user) });
   } catch (err) {
     console.error("JetX bet error:", err);
     res.status(500).json({ error: "Failed to place bet" });
@@ -3097,7 +3127,7 @@ app.post("/api/jetx/cashout", async (req, res) => {
       game: "jetx",
     });
 
-    res.json({ success: true, multiplier: mult, winAmount: win });
+    res.json({ success: true, multiplier: mult, winAmount: win, ...balancePayload(user) });
   } catch (err) {
     console.error("JetX cashout error:", err);
     res.status(500).json({ error: "Failed to cash out" });
@@ -3106,7 +3136,12 @@ app.post("/api/jetx/cashout", async (req, res) => {
 
 // GET /api/jetx/my-bet?userId=&currency=
 app.get("/api/jetx/my-bet", (req, res) => {
-  const curr = normalizeCurrency(req.query.currency);
+  let curr;
+  try {
+    curr = normalizeCurrency(req.query.currency);
+  } catch {
+    return res.status(400).json({ error: "Invalid currency" });
+  }
   const s = jetxState[curr];
   const key = String(Number(req.query.userId));
   const b = s.bets[key];

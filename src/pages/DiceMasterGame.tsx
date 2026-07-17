@@ -65,14 +65,24 @@ const DiceMasterGame = () => {
   const nativeBalance = activeWallet === "dollar" ? gameDollarBalance : activeWallet === "rupee" ? gameRupeeBalance : gameStarBalance;
   const currentBalance = nativeBalance;
 
-  const rollDice = () => {
+  const rollDice = async () => {
     if (phase !== "betting" || currentBalance < selectedBet) return;
 
-    // Bet in native wallet units (INR display → $ backend)
     const nativeBet = toNativeAmount(selectedBet, currencyMode);
     if (activeWallet === "dollar") setLocalDollarAdj(p => p - nativeBet);
     else if (activeWallet === "rupee") setLocalRupeeAdj(p => p - nativeBet);
     else setLocalStarAdj(p => p - nativeBet);
+
+    try {
+      await reportGameResult({ betAmount: nativeBet, winAmount: 0, currency: activeWallet, game: "dice-master" });
+      refreshBalance();
+    } catch (e) {
+      if (activeWallet === "dollar") setLocalDollarAdj(p => p + nativeBet);
+      else if (activeWallet === "rupee") setLocalRupeeAdj(p => p + nativeBet);
+      else setLocalStarAdj(p => p + nativeBet);
+      console.error(e);
+      return;
+    }
 
     if (soundRef.current) playBetSound();
     setPhase("rolling");
@@ -124,8 +134,7 @@ const DiceMasterGame = () => {
         setTotalLost(selectedBet);
         if (soundRef.current) playLoseSound();
       }
-      // Report result to backend in NATIVE wallet units
-      reportGameResult({ betAmount: toNativeAmount(selectedBet, currencyMode), winAmount: toNativeAmount(prize, currencyMode), currency: activeWallet, game: "dice-master" })
+      reportGameResult({ betAmount: 0, winAmount: toNativeAmount(prize, currencyMode), currency: activeWallet, game: "dice-master" })
         .then(() => { setLocalDollarAdj(0); setLocalRupeeAdj(0); setLocalStarAdj(0); refreshBalance(); }).catch(console.error);
 
       setPhase("result");

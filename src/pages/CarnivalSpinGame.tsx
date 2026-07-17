@@ -66,13 +66,24 @@ const CarnivalSpinGame = () => {
   const nativeBalance = activeWallet === "dollar" ? gameDollarBalance : activeWallet === "rupee" ? gameRupeeBalance : gameStarBalance;
   const currentBalance = nativeBalance;
 
-  const spin = () => {
+  const spin = async () => {
     if (phase !== "betting" || currentBalance < selectedBet) return;
 
     const nativeBet = toNativeAmount(selectedBet, currencyMode);
     if (activeWallet === "dollar") setLocalDollarAdj(p => p - nativeBet);
     else if (activeWallet === "rupee") setLocalRupeeAdj(p => p - nativeBet);
     else setLocalStarAdj(p => p - nativeBet);
+
+    try {
+      await reportGameResult({ betAmount: nativeBet, winAmount: 0, currency: activeWallet, game: "carnival-spin" });
+      refreshBalance();
+    } catch (e) {
+      if (activeWallet === "dollar") setLocalDollarAdj(p => p + nativeBet);
+      else if (activeWallet === "rupee") setLocalRupeeAdj(p => p + nativeBet);
+      else setLocalStarAdj(p => p + nativeBet);
+      console.error(e);
+      return;
+    }
 
     if (soundRef.current) playBetSound();
     setPhase("spinning");
@@ -124,8 +135,7 @@ const CarnivalSpinGame = () => {
         setTotalLost(selectedBet);
         if (soundRef.current) playLoseSound();
       }
-      // Report result to backend, then reset local adjustments since backend now has the real balance
-      reportGameResult({ betAmount: toNativeAmount(selectedBet, currencyMode), winAmount: toNativeAmount(prize, currencyMode), currency: activeWallet, game: "carnival-spin" })
+      reportGameResult({ betAmount: 0, winAmount: toNativeAmount(prize, currencyMode), currency: activeWallet, game: "carnival-spin" })
         .then(() => {
           setLocalDollarAdj(0);
           setLocalRupeeAdj(0);

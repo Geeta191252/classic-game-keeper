@@ -94,7 +94,7 @@ const MinesGame = () => {
   const revealedSafeRef = useRef<Set<number>>(new Set());
   const revealingRef = useRef(false);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
     if (currentBalance < selectedBet) return;
 
     // Deduct bet in native wallet units
@@ -103,6 +103,17 @@ const MinesGame = () => {
     else if (activeWallet === "rupee") setLocalRupeeAdj(p => p - nBet);
     else setLocalStarAdj(p => p - nBet);
     if (soundRef.current) playBetSound();
+
+    try {
+      await reportGameResult({ betAmount: nBet, winAmount: 0, currency: activeWallet, game: "mines" });
+      refreshBalance();
+    } catch (e) {
+      if (activeWallet === "dollar") setLocalDollarAdj(p => p + nBet);
+      else if (activeWallet === "rupee") setLocalRupeeAdj(p => p + nBet);
+      else setLocalStarAdj(p => p + nBet);
+      console.error(e);
+      return;
+    }
 
     // Lazy mine placement: mines are decided on each click, not upfront
     remainingMinesRef.current = mineCount;
@@ -113,7 +124,7 @@ const MinesGame = () => {
     setCurrentMultiplier(1);
     setWinAmount(0);
     setPhase("playing");
-  }, [currentBalance, selectedBet, activeWallet, mineCount]);
+  }, [currentBalance, selectedBet, activeWallet, mineCount, currencyMode, refreshBalance]);
 
   const revealCell = useCallback((index: number) => {
     if (phase !== "playing" || grid[index] !== "hidden" || revealingRef.current) return;
@@ -174,8 +185,7 @@ const MinesGame = () => {
       setPhase("lost");
       if (soundRef.current) playLoseSound();
       setRound(r => r + 1);
-      reportGameResult({ betAmount: nativeBetFor(selectedBet), winAmount: 0, currency: activeWallet, game: "mines" })
-        .then(() => { setLocalDollarAdj(0); setLocalRupeeAdj(0); setLocalStarAdj(0); refreshBalance(); }).catch(console.error);
+      setLocalDollarAdj(0); setLocalRupeeAdj(0); setLocalStarAdj(0); refreshBalance();
     } else {
       // Safe pick
       newGrid[index] = "safe";
@@ -194,7 +204,7 @@ const MinesGame = () => {
         setPhase("cashed");
         if (soundRef.current) playWinSound();
         setRound(r => r + 1);
-        reportGameResult({ betAmount: nativeBetFor(selectedBet), winAmount: nativeBetFor(prize), currency: activeWallet, game: "mines" })
+        reportGameResult({ betAmount: 0, winAmount: nativeBetFor(prize), currency: activeWallet, game: "mines" })
           .then(() => { setLocalDollarAdj(0); setLocalRupeeAdj(0); setLocalStarAdj(0); refreshBalance(); }).catch(console.error);
       }
     }
@@ -216,7 +226,7 @@ const MinesGame = () => {
     if (soundRef.current) playWinSound();
     setRound(r => r + 1);
     // Report cashout win to backend
-    reportGameResult({ betAmount: nativeBetFor(selectedBet), winAmount: nativeBetFor(prize), currency: activeWallet, game: "mines" })
+    reportGameResult({ betAmount: 0, winAmount: nativeBetFor(prize), currency: activeWallet, game: "mines" })
       .then(() => { setLocalDollarAdj(0); setLocalRupeeAdj(0); setLocalStarAdj(0); refreshBalance(); }).catch(console.error);
   }, [phase, safePicks, selectedBet, currentMultiplier, activeWallet, grid, minePositions, refreshBalance]);
 

@@ -54,6 +54,36 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${window.location.ori
 export type CurrencyType = "dollar" | "rupee" | "star";
 export type ActionType = "deposit" | "withdraw";
 
+export interface BalancePayload {
+  dollarBalance: number;
+  rupeeBalance: number;
+  starBalance: number;
+  dollarWinning: number;
+  rupeeWinning: number;
+  starWinning: number;
+}
+
+const balanceKeys: Array<keyof BalancePayload> = [
+  "dollarBalance",
+  "rupeeBalance",
+  "starBalance",
+  "dollarWinning",
+  "rupeeWinning",
+  "starWinning",
+];
+
+export const isBalancePayload = (data: unknown): data is BalancePayload => {
+  if (!data || typeof data !== "object") return false;
+  return balanceKeys.every((key) => typeof (data as Record<string, unknown>)[key] === "number");
+};
+
+const publishBalancePayload = <T>(data: T): T => {
+  if (isBalancePayload(data)) {
+    window.dispatchEvent(new CustomEvent<BalancePayload>("game:balance", { detail: data }));
+  }
+  return data;
+};
+
 interface InvoiceResponse {
   invoiceUrl: string;
 }
@@ -127,7 +157,7 @@ export const initiatePayment = async (
 /**
  * Fetch user balance from backend
  */
-export const fetchBalance = async (): Promise<{ dollarBalance: number; rupeeBalance: number; starBalance: number; dollarWinning: number; rupeeWinning: number; starWinning: number; referralCount: number }> => {
+export const fetchBalance = async (): Promise<BalancePayload & { referralCount: number }> => {
   const tg = getTelegram();
   const userId = tg?.initDataUnsafe?.user?.id;
 
@@ -141,7 +171,7 @@ export const fetchBalance = async (): Promise<{ dollarBalance: number; rupeeBala
     throw new Error("Failed to fetch balance");
   }
 
-  return res.json();
+  return publishBalancePayload(await res.json());
 };
 
 /**
@@ -175,7 +205,7 @@ export const fetchTransactions = async (): Promise<Array<{
 /**
  * Fetch user winnings (only from game wins)
  */
-export const fetchWinnings = async (): Promise<{ dollarWinnings: number; starWinnings: number; dollarDeposits: number; starDeposits: number }> => {
+export const fetchWinnings = async (): Promise<{ dollarWinnings: number; rupeeWinnings: number; starWinnings: number; dollarDeposits: number; rupeeDeposits: number; starDeposits: number }> => {
   const tg = getTelegram();
   const userId = tg?.initDataUnsafe?.user?.id;
 
@@ -200,7 +230,7 @@ export const reportGameResult = async (data: {
   winAmount: number;
   currency: CurrencyType;
   game: string;
-}): Promise<{ dollarBalance: number; rupeeBalance: number; starBalance: number; dollarWinning: number; rupeeWinning: number; starWinning: number }> => {
+}): Promise<BalancePayload> => {
   const tg = getTelegram();
   const userId = tg?.initDataUnsafe?.user?.id;
 
@@ -218,7 +248,7 @@ export const reportGameResult = async (data: {
     throw new Error("Failed to report game result");
   }
 
-  return res.json();
+  return publishBalancePayload(await res.json());
 };
 
 /**
@@ -258,7 +288,7 @@ export const placeGreedyKingBet = async (data: {
   amount: number;
   currency: CurrencyType;
   firstName?: string;
-}): Promise<{ success: boolean }> => {
+}): Promise<{ success: boolean } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/greedy-king/bet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -268,7 +298,7 @@ export const placeGreedyKingBet = async (data: {
     const err = await res.json();
     throw new Error(err.error || "Failed to place bet");
   }
-  return res.json();
+  return publishBalancePayload(await res.json());
 };
 
 export const fetchMyGreedyKingBets = async (userId: number | string, currency: CurrencyType): Promise<{ myBets: number[]; roundNumber: number }> => {
@@ -302,7 +332,7 @@ export const placeJetXBet = async (data: {
   amount: number;
   currency: CurrencyType;
   firstName?: string;
-}): Promise<{ success: boolean; roundNumber: number }> => {
+}): Promise<{ success: boolean; roundNumber: number } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/jetx/bet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -310,10 +340,10 @@ export const placeJetXBet = async (data: {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Failed to place bet");
-  return json;
+  return publishBalancePayload(json);
 };
 
-export const cashOutJetX = async (userId: number | string, currency: CurrencyType): Promise<{ success: boolean; multiplier: number; winAmount: number }> => {
+export const cashOutJetX = async (userId: number | string, currency: CurrencyType): Promise<{ success: boolean; multiplier: number; winAmount: number } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/jetx/cashout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -321,7 +351,7 @@ export const cashOutJetX = async (userId: number | string, currency: CurrencyTyp
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Failed to cash out");
-  return json;
+  return publishBalancePayload(json);
 };
 
 // ============================================
@@ -350,7 +380,7 @@ export const placeAviatorBet = async (data: {
   currency: CurrencyType;
   firstName?: string;
   slot?: 1 | 2;
-}): Promise<{ success: boolean; roundNumber: number; slot: number }> => {
+}): Promise<{ success: boolean; roundNumber: number; slot: number } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/aviator/bet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -358,10 +388,10 @@ export const placeAviatorBet = async (data: {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Failed to place bet");
-  return json;
+  return publishBalancePayload(json);
 };
 
-export const cashOutAviator = async (userId: number | string, currency: CurrencyType, slot: 1 | 2 = 1): Promise<{ success: boolean; multiplier: number; winAmount: number }> => {
+export const cashOutAviator = async (userId: number | string, currency: CurrencyType, slot: 1 | 2 = 1): Promise<{ success: boolean; multiplier: number; winAmount: number } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/aviator/cashout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -369,10 +399,10 @@ export const cashOutAviator = async (userId: number | string, currency: Currency
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Failed to cash out");
-  return json;
+  return publishBalancePayload(json);
 };
 
-export const cancelAviatorBet = async (userId: number | string, currency: CurrencyType, slot: 1 | 2 = 1): Promise<{ success: boolean; refunded: number }> => {
+export const cancelAviatorBet = async (userId: number | string, currency: CurrencyType, slot: 1 | 2 = 1): Promise<{ success: boolean; refunded: number } & Partial<BalancePayload>> => {
   const res = await fetch(`${API_BASE_URL}/aviator/cancel`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -380,7 +410,7 @@ export const cancelAviatorBet = async (userId: number | string, currency: Curren
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "Failed to cancel bet");
-  return json;
+  return publishBalancePayload(json);
 };
 
 
