@@ -6,7 +6,7 @@ import { playBetSound, playSpinSound, playWinSound, playLoseSound, playCountdown
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { reportGameResult, type CurrencyType } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount } from "@/lib/gameCurrency";
+import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount, currencySymbol } from "@/lib/gameCurrency";
 
 const DICE_FACES = [
   { value: 1, dots: "⚀", multiplier: 0 },
@@ -315,7 +315,7 @@ const DiceMasterGame = () => {
           }}
         >
           {phase === "betting"
-            ? `🎲 Roll Dice - Bet ${activeWallet === "dollar" ? "$" : ""}${selectedBet}${activeWallet === "star" ? " ⭐" : ""}`
+            ? `🎲 Roll Dice - Bet ${currencyMode === "USD" ? "$" : currencyMode === "INR" ? "₹" : ""}${selectedBet}${activeWallet === "star" ? " ⭐" : ""}`
             : phase === "rolling" ? "Rolling..." : `Next in ${resultTimer}s`}
         </motion.button>
       </div>

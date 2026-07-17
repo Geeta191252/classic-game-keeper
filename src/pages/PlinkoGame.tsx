@@ -13,7 +13,7 @@ import {
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { reportGameResult } from "@/lib/telegram";
 import GameCurrencyChips from "@/components/GameCurrencyChips";
-import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount } from "@/lib/gameCurrency";
+import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount, currencySymbol } from "@/lib/gameCurrency";
 import plinkoHeader from "@/assets/plinko-header.png";
 import plinkoPillar from "@/assets/plinko-pillar.png";
 
@@ -570,7 +570,7 @@ const PlinkoGame = () => {
                 </div>
                 <div className="font-black text-base" style={{ color: "hsl(0 0% 100%)" }}>
                   {lastWin >= bet ? "+ " : ""}
-                  {activeWallet === "dollar" ? "$" : ""}
+                  {currencyMode === "USD" ? "$" : currencyMode === "INR" ? "₹" : ""}
                   {lastWin.toFixed(2)}
                   {activeWallet === "star" ? " ⭐" : ""}
                 </div>
@@ -734,7 +734,7 @@ const PlinkoGame = () => {
                 border: "1px solid hsla(45,80%,55%,0.35)",
               }}
             >
-              +{p}{activeWallet === "dollar" ? "$" : "⭐"}
+              +{p}{currencyMode === "USD" ? "$" : currencyMode === "INR" ? "₹" : "⭐"}
             </button>
           ))}
           <button
