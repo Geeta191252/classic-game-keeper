@@ -21,6 +21,8 @@ import {
 } from "@/hooks/useGameSounds";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { reportGameResult, getTelegram } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount } from "@/lib/gameCurrency";
 import { toast } from "@/hooks/use-toast";
 
 type TelegramWebApp = {
@@ -145,7 +147,9 @@ const ChickenRoadGame = () => {
   const gameDollarBalance = dollarBalance + dollarWinning + localDollarAdj;
   const gameStarBalance = starBalance + starWinning + localStarAdj;
 
-  const [activeWallet, setActiveWallet] = useState<"dollar" | "star">("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  const activeWallet = modeToWallet(currencyMode);
+  const setActiveWallet = (w: "dollar" | "star") => setCurrencyMode(w === "star" ? "STAR" : "USD");
   const [selectedBet, setSelectedBet] = useState(1);
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [phase, setPhase] = useState<Phase>("betting");
@@ -162,7 +166,9 @@ const ChickenRoadGame = () => {
   }, [soundOn]);
 
   const cfg = DIFFICULTY_CONFIG[difficulty];
-  const currentBalance = activeWallet === "dollar" ? gameDollarBalance : gameStarBalance;
+  const nativeBalance = activeWallet === "dollar" ? gameDollarBalance : gameStarBalance;
+  const currentBalance = currencyMode === "INR" ? nativeBalance * INR_RATE : nativeBalance;
+  const nBet = (v: number) => toNativeAmount(v, currencyMode);
   const currentMultiplier = currentLane > 0 ? cfg.multipliers[currentLane - 1] : 0;
   const nextMultiplier =
     currentLane < cfg.multipliers.length ? cfg.multipliers[currentLane] : cfg.multipliers[cfg.multipliers.length - 1];
@@ -178,8 +184,8 @@ const ChickenRoadGame = () => {
       });
       return;
     }
-    if (activeWallet === "dollar") setLocalDollarAdj((p) => p - selectedBet);
-    else setLocalStarAdj((p) => p - selectedBet);
+    if (activeWallet === "dollar") setLocalDollarAdj((p) => p - nBet(selectedBet));
+    else setLocalStarAdj((p) => p - nBet(selectedBet));
     if (soundRef.current) playBetSound();
 
     // ===== RIG: record this bet =====
@@ -205,7 +211,7 @@ const ChickenRoadGame = () => {
     setPhase("lost");
     if (soundRef.current) playLoseSound();
     reportGameResult({
-      betAmount: selectedBet,
+      betAmount: nBet(selectedBet),
       winAmount: 0,
       currency: activeWallet,
       game: "chickenroad",
@@ -229,8 +235,8 @@ const ChickenRoadGame = () => {
     s.winStreak += 1;
     writeRig(activeWallet, s);
     reportGameResult({
-      betAmount: selectedBet,
-      winAmount: prize,
+      betAmount: nBet(selectedBet),
+      winAmount: nBet(prize),
       currency: activeWallet,
       game: "chickenroad",
     })
