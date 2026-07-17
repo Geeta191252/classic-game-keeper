@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { playBetSound, playSpinSound, playWinSound, playLoseSound, playCountdownBeep, playResultReveal, startBgMusic, stopBgMusic } from "@/hooks/useGameSounds";
 import { useBalanceContext } from "@/contexts/BalanceContext";
 import { reportGameResult, type CurrencyType } from "@/lib/telegram";
+import GameCurrencyChips from "@/components/GameCurrencyChips";
+import { GameCurrencyMode, INR_RATE, modeToWallet, toNativeAmount } from "@/lib/gameCurrency";
 
 const DICE_FACES = [
   { value: 1, dots: "⚀", multiplier: 0 },
@@ -29,7 +31,9 @@ const DiceMasterGame = () => {
   const [localStarAdj, setLocalStarAdj] = useState(0);
   const gameDollarBalance = dollarBalance + dollarWinning + localDollarAdj;
   const gameStarBalance = starBalance + starWinning + localStarAdj;
-  const [activeWallet, setActiveWallet] = useState<"dollar" | "star">("dollar");
+  const [currencyMode, setCurrencyMode] = useState<GameCurrencyMode>("USD");
+  const activeWallet = modeToWallet(currencyMode);
+  const setActiveWallet = (w: "dollar" | "star") => setCurrencyMode(w === "star" ? "STAR" : "USD");
   const [selectedBet, setSelectedBet] = useState(1);
   
   const [phase, setPhase] = useState<GamePhase>("betting");
