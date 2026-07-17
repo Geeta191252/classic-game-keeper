@@ -189,6 +189,14 @@ export default function AdminLayout() {
                       style={{ background: "rgba(20,28,46,0.6)", border: "1px solid var(--a-border)" }}>
                 <Bell size={16} />
               </button>
+              <button
+                onClick={handleLogout}
+                className="h-10 px-3 rounded-xl flex items-center gap-2 text-[12px]"
+                style={{ background: "rgba(20,28,46,0.6)", border: "1px solid var(--a-border)" }}
+                title="Sign out"
+              >
+                <LogOut size={14} /> Logout
+              </button>
               <div className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full"
                    style={{ background: "rgba(20,28,46,0.6)", border: "1px solid var(--a-border)" }}>
                 <div className="text-right leading-tight">
