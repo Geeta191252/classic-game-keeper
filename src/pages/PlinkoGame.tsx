@@ -333,7 +333,7 @@ const PlinkoGame = () => {
           alt="Plinko"
           animate={{ scale: [1, 1.02, 1] }}
           transition={{ duration: 2.4, repeat: Infinity }}
-          className="w-full max-w-[480px] h-auto pointer-events-none select-none"
+          className="w-full max-w-[320px] h-auto pointer-events-none select-none"
           style={{ filter: "drop-shadow(0 6px 12px hsla(0,0%,0%,0.5))" }}
           draggable={false}
         />
