@@ -420,14 +420,9 @@ const AviatorFunGame = () => {
   }, [currency]);
 
   const startFlyingRound = useCallback(() => {
-    // Read pre-fetched rigging state synchronously
-    const isRigged = isRiggedRef.current;
-
-    let crashVal = generateCrashMultiplier();
-    if (isRigged) {
-      // Force crash immediately
-      crashVal = Number((1.00 + Math.random() * 0.05).toFixed(2));
-    }
+    // Crash multiplier comes from the server; use a large sentinel so the local
+    // render loop never triggers the crash on its own — we wait for the server signal.
+    const crashVal = 999999;
 
     setCrashMultiplier(crashVal);
     setGameState("FLYING");
@@ -458,6 +453,8 @@ const AviatorFunGame = () => {
 
     stateRef.current.gameState = "CRASHED";
     stateRef.current.timeElapsed = 0; // Reset timer for smooth fly-away animation
+    stateRef.current.currentMultiplier = finalMult;
+    setCurrentMultiplier(finalMult);
 
     // Un-cashed user bets are lost
     setPanel1(prev => {
@@ -470,11 +467,66 @@ const AviatorFunGame = () => {
     });
 
     setHistoryList(prev => [finalMult, ...prev.slice(0, 39)]);
+    // Server drives the next WAITING transition — no local setTimeout here.
+  }, []);
 
-    setTimeout(() => {
-      startWaitingRound();
-    }, 3000);
-  }, [startWaitingRound]);
+  // ---------------------------------------------------------------------------
+  // Server-synced rounds: drive phase transitions from the shared aviator state
+  // so every user sees the same round, crash and countdown at the same time.
+  // ---------------------------------------------------------------------------
+  const serverSyncRef = useRef({ phase: "" as string, roundNumber: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = async () => {
+      try {
+        const s = await fetchAviatorState(currency);
+        if (cancelled) return;
+
+        const prev = serverSyncRef.current;
+        const phaseChanged = prev.phase !== s.phase;
+        const roundChanged = prev.roundNumber !== s.roundNumber;
+        serverSyncRef.current = { phase: s.phase, roundNumber: s.roundNumber };
+        roundSeedRef.current = s.roundNumber || 1;
+
+        if (s.phase === "betting") {
+          stateRef.current.waitingTimer = Math.max(0, s.timeLeft * 1000);
+          setWaitingCountdown(s.timeLeft);
+          if (phaseChanged || roundChanged) {
+            startWaitingRound();
+          }
+        } else if (s.phase === "flying") {
+          if (phaseChanged) startFlyingRound();
+          // Sync local elapsed time to server-reported multiplier
+          const m = Math.max(1.0001, s.multiplier);
+          const elapsedMs = (Math.log(m) / Math.log(1.075) / 1.8) * 1000;
+          stateRef.current.timeElapsed = elapsedMs;
+          stateRef.current.currentMultiplier = m;
+          setCurrentMultiplier(Number(m.toFixed(2)));
+        } else if (s.phase === "crashed") {
+          if (phaseChanged) {
+            const finalMult = s.crashAt ?? s.multiplier ?? stateRef.current.currentMultiplier;
+            startCrashedRound(Number(finalMult));
+          }
+        }
+
+        if (Array.isArray(s.history) && s.history.length) {
+          setHistoryList(s.history.slice(0, 40));
+        }
+      } catch {
+        // network hiccup — retry
+      }
+      if (!cancelled) timer = setTimeout(tick, 500);
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [currency, startWaitingRound, startFlyingRound, startCrashedRound]);
+
 
   // Main Canvas Render loop
   useEffect(() => {
