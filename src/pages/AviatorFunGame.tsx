@@ -768,6 +768,11 @@ const AviatorFunGame = () => {
     };
   }, [startWaitingRound]);
 
+  // Convert a display-unit amount to the backend currency unit
+  const toBackendAmount = useCallback((displayVal: number) => {
+    return displayMode === "INR" ? displayVal / INR_RATE : displayVal;
+  }, [displayMode]);
+
   // Place Bet
   const placeBetUser = async (panelId: "panel-1" | "panel-2") => {
     audioRef.current.init();
@@ -783,7 +788,7 @@ const AviatorFunGame = () => {
 
     try {
       await reportGameResult({
-        betAmount: panel.amount,
+        betAmount: toBackendAmount(panel.amount),
         winAmount: 0,
         currency,
         game: "aviator"
@@ -810,7 +815,7 @@ const AviatorFunGame = () => {
     try {
       await reportGameResult({
         betAmount: 0,
-        winAmount: panel.amount,
+        winAmount: toBackendAmount(panel.amount),
         currency,
         game: "aviator"
       });
@@ -839,7 +844,7 @@ const AviatorFunGame = () => {
     try {
       await reportGameResult({
         betAmount: 0,
-        winAmount: winAmt,
+        winAmount: toBackendAmount(winAmt),
         currency,
         game: "aviator"
       });
