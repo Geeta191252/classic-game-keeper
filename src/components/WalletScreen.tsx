@@ -17,8 +17,14 @@ const cryptoApiTicker: Record<string, string> = {
   usdt: "usdttrc20",
 };
 
+// Per-coin minimum deposit in USD (based on network fees / provider limits)
 const cryptoMins: Record<string, number> = {
-  btc: 18, ltc: 4, ton: 4, sol: 4, trx: 4, doge: 6,
+  btc: 20,
+  ltc: 5,
+  ton: 3,
+  sol: 5,
+  trx: 2,
+  doge: 8,
 };
 
 type CryptoOption = { id: string; label: string; name: string; color: string; symbol: string };
@@ -400,8 +406,9 @@ const WalletScreen = () => {
 
   const handleCryptoDeposit = async () => {
     const usdAmt = Number(cryptoAmount);
-    if (!usdAmt || usdAmt < 1) {
-      toast({ title: "Invalid amount", description: "Please enter a valid USD amount.", variant: "destructive" });
+    const minReq = cryptoMins[cryptoCurrency] || 1;
+    if (!usdAmt || usdAmt < minReq) {
+      toast({ title: "Amount too low", description: `Minimum deposit for ${cryptoCurrency.toUpperCase()} is $${minReq}.`, variant: "destructive" });
       return;
     }
 
@@ -763,6 +770,7 @@ const WalletScreen = () => {
                             <span className="text-[13px] font-black text-white tracking-tight">{coin.label}</span>
                           </div>
                           <span className="text-[10px] text-[#8e97a4] font-medium leading-none">{coin.name}</span>
+                          <span className={`text-[9px] font-black leading-none mt-0.5 ${active ? "text-[#00a2e8]" : "text-amber-400/80"}`}>Min ${cryptoMins[coin.id]}</span>
                         </button>
                       );
                     })}
