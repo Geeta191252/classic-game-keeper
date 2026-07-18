@@ -108,6 +108,11 @@ const WalletScreen = () => {
   const [convertStars, setConvertStars] = useState("");
   const [converting, setConverting] = useState(false);
 
+  // Telegram Star withdrawal
+  const [starWithdrawAmount, setStarWithdrawAmount] = useState("");
+  const [starWithdrawUsername, setStarWithdrawUsername] = useState("");
+  const [starWithdrawing, setStarWithdrawing] = useState(false);
+
   const [tonConnectUI] = useTonConnectUI();
   const wallet = useTonWallet();
   const tonAddress = useTonAddress(false);
@@ -560,6 +565,49 @@ const WalletScreen = () => {
       toast({ title: "Error", description: err?.message || "Conversion failed.", variant: "destructive" });
     } finally {
       setConverting(false);
+    }
+  };
+
+  const handleStarWithdraw = async () => {
+    const amt = Number(starWithdrawAmount);
+    const uname = starWithdrawUsername.trim().replace(/^@/, "");
+    if (!amt || amt < STAR_TO_DOLLAR_RATE) {
+      toast({ title: "Minimum required", description: `Minimum ${STAR_TO_DOLLAR_RATE} ⭐ to withdraw.`, variant: "destructive" });
+      return;
+    }
+    if (amt > starBalance) {
+      toast({ title: "Insufficient Stars", description: "You don't have enough Stars.", variant: "destructive" });
+      return;
+    }
+    if (!uname) {
+      toast({ title: "Username required", description: "Enter your Telegram @username.", variant: "destructive" });
+      return;
+    }
+    setStarWithdrawing(true);
+    try {
+      const tg = getTelegram();
+      const userId = tg?.initDataUnsafe?.user?.id || "demo";
+      const res = await fetch(`${apiBase}/withdraw`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: amt,
+          currency: "star",
+          network: "TELEGRAM_STARS",
+          cryptoAddress: `@${uname}`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Withdrawal failed");
+      toast({ title: "Request submitted ✅", description: `${amt} ⭐ withdrawal to @${uname} sent for admin approval.` });
+      setStarWithdrawAmount("");
+      setStarWithdrawUsername("");
+      refreshBalance();
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Withdrawal failed.", variant: "destructive" });
+    } finally {
+      setStarWithdrawing(false);
     }
   };
 
@@ -1357,6 +1405,59 @@ const WalletScreen = () => {
                     >
                       {converting ? "..." : `Convert to $${dollarOutput}`}
                     </button>
+                  </div>
+                </div>
+
+                {/* Direct Telegram Star Withdrawal */}
+                <div className="bg-[#141b2b] border border-white/[0.02] rounded-2xl p-4 space-y-3.5 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Star className="h-4 w-4 text-amber-400" />
+                      <h3 className="font-black text-xs text-white uppercase tracking-wider">Telegram Star Withdraw</h3>
+                    </div>
+                    <span className="text-[9px] font-extrabold bg-[#0d121f] text-amber-400 px-2 py-0.5 rounded border border-white/[0.01]">
+                      Min {STAR_TO_DOLLAR_RATE} ⭐
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-[#8e97a4]">
+                    Withdraw Stars directly to your Telegram account. Owner will send Stars to your @username after approval.
+                  </p>
+
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider mb-1 block">Telegram Username</label>
+                      <Input
+                        type="text"
+                        placeholder="@yourusername"
+                        value={starWithdrawUsername}
+                        onChange={(e) => setStarWithdrawUsername(e.target.value)}
+                        className="rounded-xl bg-[#0d121f] h-9 text-xs border-white/[0.02] text-white placeholder-slate-500 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider mb-1 block">Amount of Stars</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Input
+                            type="number"
+                            placeholder={`Min ${STAR_TO_DOLLAR_RATE} ⭐`}
+                            value={starWithdrawAmount}
+                            onChange={(e) => setStarWithdrawAmount(e.target.value)}
+                            className="pr-6 rounded-xl bg-[#0d121f] h-9 text-xs border-white/[0.02] text-white placeholder-slate-500 font-bold"
+                            min={STAR_TO_DOLLAR_RATE}
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-[#8e97a4]">⭐</span>
+                        </div>
+                        <button
+                          onClick={handleStarWithdraw}
+                          disabled={starWithdrawing || !starWithdrawAmount || !starWithdrawUsername.trim()}
+                          className="rounded-xl h-9 px-4 text-[10px] font-black uppercase bg-amber-500 hover:bg-amber-600 text-black tracking-wider shadow-md transition-all disabled:opacity-50"
+                        >
+                          {starWithdrawing ? "..." : "Withdraw"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
