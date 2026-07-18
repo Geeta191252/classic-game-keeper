@@ -1261,17 +1261,18 @@ const WalletScreen = () => {
 
                   {tonAddress ? (
                     <div className="space-y-1.5">
-                      <p className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider">Withdraw to connected TON wallet (Min $10)</p>
+                      <p className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider">Withdraw to connected TON wallet (Min ${cryptoWithdrawMin})</p>
                       <div className="flex gap-2">
                         <div className="flex-1 relative">
                           <Input
                             type="number"
-                            placeholder="Amount to withdraw (min $10)"
+                            placeholder={`Amount to withdraw (min $${cryptoWithdrawMin})`}
                             value={tonWithdrawAmount}
                             onChange={(e) => setTonWithdrawAmount(e.target.value)}
                             className="pr-6 rounded-xl bg-[#0d121f] h-9 text-xs border-white/[0.02] text-white placeholder-slate-500 font-bold"
-                            min="10"
+                            min={cryptoWithdrawMin}
                           />
+
                           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-[#8e97a4]">$</span>
                         </div>
                         <button
