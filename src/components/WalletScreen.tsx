@@ -63,6 +63,7 @@ const formatTransactionTime = (value: unknown) => {
 const WalletScreen = () => {
   const [loading, setLoading] = useState(false);
   const [walletTab, setWalletTab] = useState<"deposit" | "withdraw">("deposit");
+  const [depositMethod, setDepositMethod] = useState<"crypto" | "inr" | "star">("crypto");
   const [amountDialog, setAmountDialog] = useState<{
     open: boolean;
     action: ActionType;
