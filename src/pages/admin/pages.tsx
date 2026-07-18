@@ -97,7 +97,7 @@ function NotConnected({ title, note }: { title: string; note?: string }) {
 }
 
 function money(v: number | undefined | null, sym = "") {
-  const n = Number(v || 0);
+  const n = Math.abs(Number(v || 0));
   return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 function fmtDate(v?: string) {
