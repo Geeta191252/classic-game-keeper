@@ -492,7 +492,7 @@ const AviatorFunGame = () => {
 
     const tick = async () => {
       try {
-        const s = await fetchAviatorState(currency);
+        const s = await fetchAviatorFunState(currency);
         if (cancelled) return;
 
         const prev = serverSyncRef.current;
@@ -794,7 +794,7 @@ const AviatorFunGame = () => {
         betAmount: toBackendAmount(panel.amount),
         winAmount: 0,
         currency,
-        game: "aviator"
+        game: "aviator-fun"
       });
       refreshBalance();
     } catch (e) {
@@ -820,7 +820,7 @@ const AviatorFunGame = () => {
         betAmount: 0,
         winAmount: toBackendAmount(panel.amount),
         currency,
-        game: "aviator"
+        game: "aviator-fun"
       });
       refreshBalance();
     } catch (e) {
@@ -849,7 +849,7 @@ const AviatorFunGame = () => {
         betAmount: 0,
         winAmount: toBackendAmount(winAmt),
         currency,
-        game: "aviator"
+        game: "aviator-fun"
       });
       refreshBalance();
     } catch (e) {
