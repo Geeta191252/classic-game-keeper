@@ -632,12 +632,6 @@ const WalletScreen = () => {
                 {totalStarWallet.toLocaleString()}
               </p>
             </div>
-            <button
-              onClick={() => handleCurrencySelect("deposit", "star")}
-              className="h-6 px-2.5 text-[9px] font-black uppercase bg-[#00a2e8] hover:bg-[#0091d0] text-white rounded-lg tracking-wide transition-all"
-            >
-              + Add
-            </button>
           </div>
         </motion.div>
       </div>
