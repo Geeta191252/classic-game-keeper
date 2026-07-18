@@ -97,6 +97,15 @@ export interface AdminTx {
   createdAt?: string;
   cryptoAddress?: string;
   withdrawalNetwork?: string;
+  user?: {
+    telegramId: number;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    dollarBalance?: number;
+    rupeeBalance?: number;
+    starBalance?: number;
+  } | null;
 }
 export const listTransactions = (params: {
   type?: string; status?: string; currency?: string; telegramId?: number; limit?: number; skip?: number;
