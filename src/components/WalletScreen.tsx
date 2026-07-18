@@ -17,8 +17,8 @@ const cryptoApiTicker: Record<string, string> = {
   usdt: "usdttrc20",
 };
 
-// Per-coin minimum deposit in USD (based on network fees / provider limits)
-const cryptoMins: Record<string, number> = {
+// Per-coin minimum deposit in USD (defaults, overridable via admin limits config)
+const defaultCryptoMins: Record<string, number> = {
   btc: 20,
   ltc: 5,
   ton: 3,
@@ -26,6 +26,13 @@ const cryptoMins: Record<string, number> = {
   trx: 2,
   doge: 8,
 };
+
+const defaultLimits = {
+  inr: { depositMin: 300, withdrawMin: 300 },
+  star: { depositMin: 100, withdrawMin: 100 },
+  crypto: { depositMin: defaultCryptoMins, withdrawMin: 10 },
+};
+
 
 type CryptoOption = { id: string; label: string; name: string; color: string; symbol: string };
 const cryptoOptions: CryptoOption[] = [
@@ -182,6 +189,14 @@ const WalletScreen = () => {
     }
   };
 
+  const [limits, setLimits] = useState(defaultLimits);
+  const cryptoMins = limits.crypto.depositMin;
+  const inrDepositMin = limits.inr.depositMin;
+  const inrWithdrawMin = limits.inr.withdrawMin;
+  const starDepositMin = limits.star.depositMin;
+  const starWithdrawMin = limits.star.withdrawMin;
+  const cryptoWithdrawMin = limits.crypto.withdrawMin;
+
   useEffect(() => {
     fetch(`${apiBase}/upi-config`)
       .then(res => {
@@ -194,7 +209,12 @@ const WalletScreen = () => {
         }
       })
       .catch(() => {});
+    fetch(`${apiBase}/limits-config`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data && data.inr) setLimits(data); })
+      .catch(() => {});
   }, []);
+
 
   useEffect(() => {
     if (walletTab === "deposit") setDepositStep("menu");
@@ -203,10 +223,11 @@ const WalletScreen = () => {
 
   const handleUpiDepositSubmit = async () => {
     const rupeeAmount = Number(upiAmount);
-    if (!rupeeAmount || rupeeAmount <= 0) {
-      toast({ title: "Invalid amount", description: "Please enter a valid amount.", variant: "destructive" });
+    if (!rupeeAmount || rupeeAmount < inrDepositMin) {
+      toast({ title: `Minimum ₹${inrDepositMin}`, description: `Minimum UPI deposit is ₹${inrDepositMin}.`, variant: "destructive" });
       return;
     }
+
     const utrVal = upiUtr.trim();
     if (utrVal.length < 10) {
       toast({ title: "Invalid UTR", description: "Enter a valid 12-digit UTR/Transaction ID.", variant: "destructive" });
@@ -571,10 +592,11 @@ const WalletScreen = () => {
   const handleStarWithdraw = async () => {
     const amt = Number(starWithdrawAmount);
     const uname = starWithdrawUsername.trim().replace(/^@/, "");
-    if (!amt || amt < STAR_TO_DOLLAR_RATE) {
-      toast({ title: "Minimum required", description: `Minimum ${STAR_TO_DOLLAR_RATE} ⭐ to withdraw.`, variant: "destructive" });
+    if (!amt || amt < starWithdrawMin) {
+      toast({ title: "Minimum required", description: `Minimum ${starWithdrawMin} ⭐ to withdraw.`, variant: "destructive" });
       return;
     }
+
     if (amt > starBalance) {
       toast({ title: "Insufficient Stars", description: "You don't have enough Stars.", variant: "destructive" });
       return;
@@ -727,10 +749,11 @@ const WalletScreen = () => {
                   Choose Deposit Method
                 </p>
                 {([
-                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: "Min $4+", icon: DollarSign, color: "#00a2e8" },
-                  { id: "inr", label: "INR", desc: "UPI / QR Code", min: "Min ₹100", icon: IndianRupee, color: "#10b981" },
-                  { id: "star", label: "Star", desc: "Telegram Stars ⭐", min: `Min ${STAR_TO_DOLLAR_RATE} ⭐`, icon: Star, color: "#f59e0b" },
+                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: `Min $${Math.min(...Object.values(cryptoMins))}+`, icon: DollarSign, color: "#00a2e8" },
+                  { id: "inr", label: "INR", desc: "UPI / QR Code", min: `Min ₹${inrDepositMin}`, icon: IndianRupee, color: "#10b981" },
+                  { id: "star", label: "Star", desc: "Telegram Stars ⭐", min: `Min ${starDepositMin} ⭐`, icon: Star, color: "#f59e0b" },
                 ] as const).map((m) => {
+
                   const Icon = m.icon;
                   return (
                     <button
@@ -1080,10 +1103,11 @@ const WalletScreen = () => {
                   Choose Withdraw Method
                 </p>
                 {([
-                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: "Min $10", icon: DollarSign, color: "#00a2e8" },
-                  { id: "inr", label: "INR", desc: "UPI / Bank UPI ID", min: "Min ₹500", icon: IndianRupee, color: "#10b981" },
-                  { id: "star", label: "Star", desc: "Convert Stars → $ then withdraw", min: `Min ${STAR_TO_DOLLAR_RATE} ⭐`, icon: Star, color: "#f59e0b" },
+                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: `Min $${cryptoWithdrawMin}`, icon: DollarSign, color: "#00a2e8" },
+                  { id: "inr", label: "INR", desc: "UPI / Bank UPI ID", min: `Min ₹${inrWithdrawMin}`, icon: IndianRupee, color: "#10b981" },
+                  { id: "star", label: "Star", desc: "Convert Stars → $ then withdraw", min: `Min ${starWithdrawMin} ⭐`, icon: Star, color: "#f59e0b" },
                 ] as const).map((m) => {
+
                   const Icon = m.icon;
                   return (
                     <button
@@ -1173,20 +1197,21 @@ const WalletScreen = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Amount (USD) — Min $10</label>
+                    <label className="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Amount (USD) — Min ${cryptoWithdrawMin}</label>
                     <Input
                       type="number"
-                      placeholder="Amount to withdraw (min $10)"
+                      placeholder={`Amount to withdraw (min $${cryptoWithdrawMin})`}
                       value={withdrawAmount}
                       onChange={e => { setWithdrawAmount(e.target.value); setWithdrawCurrency("dollar"); }}
                       className="rounded-xl bg-[#0d121f] border-white/[0.02] text-white h-9 text-xs"
-                      min="10"
+                      min={cryptoWithdrawMin}
                     />
                   </div>
 
                   <Button
                     onClick={() => { setWithdrawCurrency("dollar"); handleWithdrawSubmit(); }}
-                    disabled={withdrawing || !withdrawAmount || !withdrawAddress.trim() || parseFloat(withdrawAmount) < 10}
+                    disabled={withdrawing || !withdrawAmount || !withdrawAddress.trim() || parseFloat(withdrawAmount) < cryptoWithdrawMin}
+
                     className="w-full rounded-xl h-10 font-black text-xs uppercase bg-[#00a2e8] hover:bg-[#0091d0] text-white tracking-wider shadow-md shadow-[#00a2e8]/20 transition-all disabled:opacity-50"
                   >
                     {withdrawing ? "Submitting..." : `Withdraw via ${withdrawCryptoOptions.find(c => c.id === withdrawCrypto)?.label || ''}`}
@@ -1237,17 +1262,18 @@ const WalletScreen = () => {
 
                   {tonAddress ? (
                     <div className="space-y-1.5">
-                      <p className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider">Withdraw to connected TON wallet (Min $10)</p>
+                      <p className="text-[9px] font-extrabold text-[#8e97a4] uppercase tracking-wider">Withdraw to connected TON wallet (Min ${cryptoWithdrawMin})</p>
                       <div className="flex gap-2">
                         <div className="flex-1 relative">
                           <Input
                             type="number"
-                            placeholder="Amount to withdraw (min $10)"
+                            placeholder={`Amount to withdraw (min $${cryptoWithdrawMin})`}
                             value={tonWithdrawAmount}
                             onChange={(e) => setTonWithdrawAmount(e.target.value)}
                             className="pr-6 rounded-xl bg-[#0d121f] h-9 text-xs border-white/[0.02] text-white placeholder-slate-500 font-bold"
-                            min="10"
+                            min={cryptoWithdrawMin}
                           />
+
                           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-[#8e97a4]">$</span>
                         </div>
                         <button
@@ -1298,7 +1324,7 @@ const WalletScreen = () => {
                   </div>
 
                   <p className="text-[10px] text-[#8e97a4]">
-                    Minimum withdrawal: <span className="text-amber-400 font-black">₹500</span>. Payout to your UPI ID after admin approval.
+                    Minimum withdrawal: <span className="text-amber-400 font-black">₹{inrWithdrawMin}</span>. Payout to your UPI ID after admin approval.
                   </p>
 
                   <div className="space-y-1">
@@ -1313,22 +1339,22 @@ const WalletScreen = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Amount (INR) — Min ₹500</label>
+                    <label className="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Amount (INR) — Min ₹{inrWithdrawMin}</label>
                     <Input
                       type="number"
-                      placeholder="Amount in ₹ (min 500)"
+                      placeholder={`Amount in ₹ (min ${inrWithdrawMin})`}
                       value={withdrawAmount}
                       onChange={e => setWithdrawAmount(e.target.value)}
                       className="rounded-xl bg-[#0d121f] border-white/[0.02] text-white h-9 text-xs"
-                      min="500"
+                      min={inrWithdrawMin}
                     />
                   </div>
 
                   <Button
                     onClick={() => {
                       const amt = parseFloat(withdrawAmount);
-                      if (!amt || amt < 500) {
-                        toast({ title: "Minimum ₹500", description: "Minimum INR withdrawal is ₹500.", variant: "destructive" });
+                      if (!amt || amt < inrWithdrawMin) {
+                        toast({ title: `Minimum ₹${inrWithdrawMin}`, description: `Minimum INR withdrawal is ₹${inrWithdrawMin}.`, variant: "destructive" });
                         return;
                       }
                       if (!upiWithdrawAddress.trim()) {
@@ -1340,9 +1366,10 @@ const WalletScreen = () => {
                       setWithdrawNetwork("UPI");
                       setTimeout(handleWithdrawSubmit, 0);
                     }}
-                    disabled={withdrawing || !withdrawAmount || !upiWithdrawAddress.trim() || parseFloat(withdrawAmount) < 500}
+                    disabled={withdrawing || !withdrawAmount || !upiWithdrawAddress.trim() || parseFloat(withdrawAmount) < inrWithdrawMin}
                     className="w-full rounded-xl h-10 font-black text-xs uppercase bg-emerald-500 hover:bg-emerald-600 text-white tracking-wider shadow-md transition-all disabled:opacity-50"
                   >
+
                     {withdrawing ? "Submitting..." : "Withdraw to UPI"}
                   </Button>
 
