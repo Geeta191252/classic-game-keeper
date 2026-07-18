@@ -1102,10 +1102,11 @@ const WalletScreen = () => {
                   Choose Withdraw Method
                 </p>
                 {([
-                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: "Min $10", icon: DollarSign, color: "#00a2e8" },
-                  { id: "inr", label: "INR", desc: "UPI / Bank UPI ID", min: "Min ₹500", icon: IndianRupee, color: "#10b981" },
-                  { id: "star", label: "Star", desc: "Convert Stars → $ then withdraw", min: `Min ${STAR_TO_DOLLAR_RATE} ⭐`, icon: Star, color: "#f59e0b" },
+                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: `Min $${cryptoWithdrawMin}`, icon: DollarSign, color: "#00a2e8" },
+                  { id: "inr", label: "INR", desc: "UPI / Bank UPI ID", min: `Min ₹${inrWithdrawMin}`, icon: IndianRupee, color: "#10b981" },
+                  { id: "star", label: "Star", desc: "Convert Stars → $ then withdraw", min: `Min ${starWithdrawMin} ⭐`, icon: Star, color: "#f59e0b" },
                 ] as const).map((m) => {
+
                   const Icon = m.icon;
                   return (
                     <button
