@@ -223,10 +223,11 @@ const WalletScreen = () => {
 
   const handleUpiDepositSubmit = async () => {
     const rupeeAmount = Number(upiAmount);
-    if (!rupeeAmount || rupeeAmount <= 0) {
-      toast({ title: "Invalid amount", description: "Please enter a valid amount.", variant: "destructive" });
+    if (!rupeeAmount || rupeeAmount < inrDepositMin) {
+      toast({ title: `Minimum ₹${inrDepositMin}`, description: `Minimum UPI deposit is ₹${inrDepositMin}.`, variant: "destructive" });
       return;
     }
+
     const utrVal = upiUtr.trim();
     if (utrVal.length < 10) {
       toast({ title: "Invalid UTR", description: "Enter a valid 12-digit UTR/Transaction ID.", variant: "destructive" });
