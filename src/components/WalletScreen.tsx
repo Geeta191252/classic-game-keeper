@@ -748,10 +748,11 @@ const WalletScreen = () => {
                   Choose Deposit Method
                 </p>
                 {([
-                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: "Min $4+", icon: DollarSign, color: "#00a2e8" },
-                  { id: "inr", label: "INR", desc: "UPI / QR Code", min: "Min ₹100", icon: IndianRupee, color: "#10b981" },
-                  { id: "star", label: "Star", desc: "Telegram Stars ⭐", min: `Min ${STAR_TO_DOLLAR_RATE} ⭐`, icon: Star, color: "#f59e0b" },
+                  { id: "crypto", label: "Crypto $", desc: "BTC • LTC • TON • SOL • TRX • DOGE", min: `Min $${Math.min(...Object.values(cryptoMins))}+`, icon: DollarSign, color: "#00a2e8" },
+                  { id: "inr", label: "INR", desc: "UPI / QR Code", min: `Min ₹${inrDepositMin}`, icon: IndianRupee, color: "#10b981" },
+                  { id: "star", label: "Star", desc: "Telegram Stars ⭐", min: `Min ${starDepositMin} ⭐`, icon: Star, color: "#f59e0b" },
                 ] as const).map((m) => {
+
                   const Icon = m.icon;
                   return (
                     <button
