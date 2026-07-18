@@ -279,3 +279,16 @@ export const resetAviatorFunLedger = (currency: AviatorFunCurrency) =>
     method: "POST",
     body: JSON.stringify({ currency }),
   });
+
+// ---------- Deposit / Withdraw Limits ----------
+export interface LimitsConfig {
+  inr: { depositMin: number; withdrawMin: number };
+  star: { depositMin: number; withdrawMin: number };
+  crypto: { depositMin: Record<string, number>; withdrawMin: number };
+}
+export const getLimitsConfig = () => adminFetch<LimitsConfig>("/admin/limits-config");
+export const saveLimitsConfig = (cfg: LimitsConfig) =>
+  adminFetch<{ success: true; config: LimitsConfig }>("/admin/limits-config", {
+    method: "POST",
+    body: JSON.stringify(cfg),
+  });
