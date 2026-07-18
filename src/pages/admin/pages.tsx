@@ -1643,44 +1643,106 @@ function DepositMethodCard({ title, desc, steps, tone, on = true }:
     </div>
   );
 }
-export function DepositTypePage() {
-  return (
-    <div>
-      <PageHeader title="Deposit Type" subtitle="Configure available deposit payment methods for users"
-        right={<button className="a-btn" style={{background:"#3b82f6",color:"#fff"}}>💾 Save Changes</button>} />
-      <DepositMethodCard title="Manual Pay" tone="#4aa8ff"
-        desc="When enabled, users can deposit funds using manual UPI transfer. This is the primary payment method that must be enabled before other methods can be used."
-        steps={["User selects Manual Pay as payment method","User enters deposit amount","System provides UPI QR code or payment details","User completes payment via UPI transfer","Admin manually verifies and approves deposit"]}/>
-      <DepositMethodCard title="USDT BEP20" tone="#f6a24a"
-        desc="When enabled, users can deposit funds using USDT (BEP20) cryptocurrency. Users will send USDT to a provided wallet address and the deposit will be automatically verified."
-        steps={["User selects USDT BEP20 as payment method","User enters USDT amount (minimum $10)","System provides BEP20 wallet address","User sends USDT to the address","System automatically verifies and processes deposit"]}/>
-    </div>
-  );
-}
+function LimitsEditor({ mode }: { mode: "deposit" | "withdraw" }) {
+  const [cfg, setCfg] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
-/* Deposit minimum & Withdraw limit share visual style */
-export function WithdrawLimitPage() {
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getLimitsConfig } = await import("@/lib/adminApi");
+        const data = await getLimitsConfig();
+        setCfg(data);
+      } catch (e: any) { setMsg({ tone: "err", text: e?.message || "Failed to load" }); }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  const save = async () => {
+    if (!cfg) return;
+    setSaving(true); setMsg(null);
+    try {
+      const { saveLimitsConfig } = await import("@/lib/adminApi");
+      await saveLimitsConfig(cfg);
+      setMsg({ tone: "ok", text: "Saved successfully." });
+    } catch (e: any) { setMsg({ tone: "err", text: e?.message || "Save failed" }); }
+    finally { setSaving(false); }
+  };
+
+  if (loading || !cfg) return <div className="a-card text-slate-400 text-sm">Loading limits…</div>;
+
+  const key = mode === "deposit" ? "depositMin" : "withdrawMin";
+  const label = mode === "deposit" ? "Minimum Deposit" : "Minimum Withdraw";
+
   return (
     <div>
-      <PageHeader icon={<TrendingDown size={18}/>} title="Withdraw Limit" subtitle="Set min/max and rules for user withdrawals. These apply to the user web panel (withdraw page) and are enforced by the server." tone="orange"
-        right={<button className="a-btn" style={{background:"#33d69f",color:"#04070d"}}>💾 Save & Apply</button>} />
-      <div className="a-card">
-        <div className="text-white font-bold text-[16px] mb-4">Min, max & daily limit (applied on user panel)</div>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div><div className="a-label">Minimum (₹)</div><input className="a-input" defaultValue="300"/><div className="text-[11px] mt-1" style={{color:"var(--a-text-mute)"}}>Users cannot withdraw below this.</div></div>
-          <div><div className="a-label">Maximum per withdrawal (₹)</div><input className="a-input" placeholder="0 = no limit"/><div className="text-[11px] mt-1" style={{color:"var(--a-text-mute)"}}>0 = no limit.</div></div>
-          <div><div className="a-label">Daily limit (₹)</div><input className="a-input" placeholder="0 = no limit"/><div className="text-[11px] mt-1" style={{color:"var(--a-text-mute)"}}>Max total per user per day. 0 = no cap.</div></div>
-        </div>
-        <div className="rounded-xl p-3" style={{background:"rgba(10,15,26,0.5)",border:"1px solid var(--a-border)"}}>
-          <div className="text-white font-semibold mb-2">Summary</div>
-          <ul className="text-[13px] space-y-1 pl-4 list-disc" style={{color:"var(--a-text-dim)"}}>
-            <li>Min: ₹300</li><li>Max per withdrawal: No limit</li><li>Daily limit: No limit</li>
-          </ul>
-        </div>
+      <div className="a-card mb-4">
+        <div className="text-white font-bold text-[16px] mb-4">{label} — INR (₹)</div>
+        <input className="a-input" type="number" value={cfg.inr[key]}
+          onChange={(e) => setCfg({ ...cfg, inr: { ...cfg.inr, [key]: Number(e.target.value) || 0 } })}/>
+      </div>
+
+      <div className="a-card mb-4">
+        <div className="text-white font-bold text-[16px] mb-4">{label} — Telegram Stars (★)</div>
+        <input className="a-input" type="number" value={cfg.star[key]}
+          onChange={(e) => setCfg({ ...cfg, star: { ...cfg.star, [key]: Number(e.target.value) || 0 } })}/>
+      </div>
+
+      <div className="a-card mb-4">
+        <div className="text-white font-bold text-[16px] mb-4">{label} — Crypto (USD)</div>
+        {mode === "deposit" ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {["btc","ltc","ton","sol","trx","doge"].map((coin) => (
+              <div key={coin}>
+                <div className="a-label uppercase">{coin} — Min $</div>
+                <input className="a-input" type="number"
+                  value={cfg.crypto.depositMin?.[coin] ?? 0}
+                  onChange={(e) => setCfg({
+                    ...cfg,
+                    crypto: { ...cfg.crypto, depositMin: { ...(cfg.crypto.depositMin || {}), [coin]: Number(e.target.value) || 0 } }
+                  })}/>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <div className="a-label">All crypto withdrawals — Min $</div>
+            <input className="a-input" type="number" value={cfg.crypto.withdrawMin}
+              onChange={(e) => setCfg({ ...cfg, crypto: { ...cfg.crypto, withdrawMin: Number(e.target.value) || 0 } })}/>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={saving} className="a-btn" style={{background:"#33d69f",color:"#04070d"}}>
+          {saving ? "Saving…" : "💾 Save & Apply"}
+        </button>
+        {msg && <span className={msg.tone === "ok" ? "text-emerald-400 text-sm" : "text-red-400 text-sm"}>{msg.text}</span>}
       </div>
     </div>
   );
 }
+
+export function DepositTypePage() {
+  return (
+    <div>
+      <PageHeader title="Deposit Minimums" subtitle="Set minimum deposit amount per currency (INR, Stars, Crypto). Applied on the user wallet." tone="teal"/>
+      <LimitsEditor mode="deposit" />
+    </div>
+  );
+}
+
+export function WithdrawLimitPage() {
+  return (
+    <div>
+      <PageHeader icon={<TrendingDown size={18}/>} title="Withdraw Limit" subtitle="Set minimum withdrawal per currency. Applied on the user wallet." tone="orange"/>
+      <LimitsEditor mode="withdraw" />
+    </div>
+  );
+}
+
 
 /* ============= Aviator Fun Control ============= */
 import {
