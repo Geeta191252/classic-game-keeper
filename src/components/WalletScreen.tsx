@@ -75,6 +75,8 @@ const WalletScreen = () => {
   const [loading, setLoading] = useState(false);
   const [walletTab, setWalletTab] = useState<"deposit" | "withdraw">("deposit");
   const [depositStep, setDepositStep] = useState<"menu" | "crypto" | "inr" | "star">("menu");
+  const [withdrawStep, setWithdrawStep] = useState<"menu" | "crypto" | "inr" | "star">("menu");
+  const [upiWithdrawAddress, setUpiWithdrawAddress] = useState("");
   const [amountDialog, setAmountDialog] = useState<{
     open: boolean;
     action: ActionType;
